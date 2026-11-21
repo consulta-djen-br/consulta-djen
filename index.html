@@ -5,61 +5,173 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
-<title>Ferramentas de consulta</title>
+<title>Consulta DJEN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b4e8d'/%3E%3Crect x='7' y='8' width='18' height='3.4' rx='1.7' fill='%23fff'/%3E%3Crect x='7' y='14.3' width='13' height='3.4' rx='1.7' fill='%23ffd95c'/%3E%3Crect x='7' y='20.6' width='16' height='3.4' rx='1.7' fill='%23fff'/%3E%3C/svg%3E">
 <style>
 :root {
   --bg: #f1f4f8; --surface: #ffffff; --ink: #132033; --ink-2: #4a5b70; --line: #d3dae3; --line-strong: #aeb9c7;
-  --accent: #1b4e8d; --accent-soft: #e2ecf8; --focus: #1b4e8d;
+  --accent: #1b4e8d; --accent-ink: #ffffff; --accent-soft: #e2ecf8; --mark: #ffd95c; --mark-bg: #ffe27d; --focus: #1b4e8d;
   --f-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
-    --accent: #86b4ee; --accent-soft: #1d3250; --focus: #86b4ee; color-scheme: dark;
+    --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #7a6416; --focus: #86b4ee; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
-  --accent: #86b4ee; --accent-soft: #1d3250; --focus: #86b4ee; color-scheme: dark;
+  --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #7a6416; --focus: #86b4ee; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {
-  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
-  padding-block: 40px 56px;
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.55;
+  padding-block: 20px 56px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
-h1 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; }
-p { margin: 0; }
-.lead { color: var(--ink-2); max-width: 62ch; }
-.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.cartao {
-  display: block; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
-  border-radius: 4px; padding: 16px 18px; color: inherit; text-decoration: none;
+.pagina { max-width: 1060px; margin: 0 auto; display: flex; flex-direction: column; gap: clamp(40px, 7vw, 72px); }
+h1, h2, p, ul { margin: 0; }
+main { display: flex; flex-direction: column; gap: clamp(40px, 7vw, 72px); }
+a { color: var(--accent); }
+a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.topo { display: flex; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.marca { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.marca svg { width: 32px; height: 32px; flex: none; }
+.marca .logo-fundo { fill: var(--accent); }
+.marca .logo-claro { fill: var(--accent-ink); }
+.marca .logo-marca { fill: var(--mark); }
+.marca span { font-family: var(--f-serif); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+
+.abertura { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+.abertura h1 {
+  font-family: var(--f-serif); font-weight: 700; font-size: clamp(36px, 6.2vw, 58px); line-height: 1.06; letter-spacing: -.02em; text-wrap: balance;
 }
-.cartao:hover { border-color: var(--line-strong); border-left-color: var(--accent); background: var(--accent-soft); }
-.cartao:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.cartao h2 { margin: 0 0 4px; font-size: 18px; color: var(--accent); }
-.cartao p { color: var(--ink-2); }
-.rodape { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+.abertura .texto { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.abertura .sub { color: var(--ink-2); font-size: 18px; max-width: 46ch; }
+.acao { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; padding-top: 6px; }
+.botao {
+  display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 650; font-size: 17px;
+  padding: 13px 26px; border-radius: 4px; border: 1px solid var(--accent);
+}
+.botao:hover { background: transparent; color: var(--accent); }
+.botao:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.acao small { color: var(--ink-2); font-size: 14px; }
+
+.ilustra { min-width: 0; }
+.ilustra svg { display: block; width: 100%; height: auto; max-width: 460px; margin-left: auto; }
+.ilustra .folha { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.5; }
+.ilustra .linha { fill: var(--line); }
+.ilustra .titulo { fill: var(--ink-2); opacity: .55; }
+.ilustra .aba { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
+.ilustra .aba-ativa { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.ilustra text { font-family: var(--f-ui); font-size: 13px; fill: var(--ink-2); }
+.ilustra .aba-ativa + text { fill: var(--accent); font-weight: 650; }
+.ilustra .grifo { fill: var(--mark-bg); }
+@keyframes grifar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .ilustra .grifo { transform-box: fill-box; transform-origin: 0 50%; animation: grifar .7s cubic-bezier(.3, .7, .2, 1) both; }
+  .ilustra .g1 { animation-delay: .35s; }
+  .ilustra .g2 { animation-delay: .75s; }
+  .ilustra .g3 { animation-delay: 1.15s; }
+}
+
+.recursos h2 { font-family: var(--f-serif); font-size: 26px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 22px; }
+.lista { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 56px; }
+.lista li { border-top: 2px solid var(--line-strong); padding-top: 14px; min-width: 0; }
+.lista h3 { margin: 0 0 4px; font-size: 17px; font-weight: 650; }
+.lista p { color: var(--ink-2); max-width: 52ch; }
+
+.rodape { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--ink-2); max-width: 80ch; }
+
+@media (max-width: 820px) {
+  .abertura { grid-template-columns: minmax(0, 1fr); }
+  .ilustra svg { margin-left: 0; max-width: 420px; }
+}
+@media (max-width: 620px) {
+  .lista { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .abertura .sub { font-size: 17px; }
+}
 </style>
 </head>
 <body>
-<main class="wrap">
-  <header>
-    <h1>Ferramentas de consulta</h1>
-    <p class="lead">Páginas simples que funcionam direto no navegador, sem cadastro e sem instalar nada. Cada uma consulta uma fonte pública e guarda as suas buscas apenas no seu próprio navegador.</p>
+<div class="pagina">
+  <header class="topo">
+    <a class="marca" href="./" aria-label="Consulta DJEN, página inicial">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect class="logo-fundo" width="32" height="32" rx="7"/>
+        <rect class="logo-claro" x="7" y="8" width="18" height="3.4" rx="1.7"/>
+        <rect class="logo-marca" x="7" y="14.3" width="13" height="3.4" rx="1.7"/>
+        <rect class="logo-claro" x="7" y="20.6" width="16" height="3.4" rx="1.7"/>
+      </svg>
+      <span>Consulta DJEN</span>
+    </a>
   </header>
-  <ul class="lista">
-    <li>
-      <a class="cartao" href="djen/">
-        <h2>Consulta DJEN</h2>
-        <p>Busca publicações do Diário de Justiça Eletrônico Nacional (acórdãos, decisões, despachos e intimações) na API pública de comunicações do CNJ. Filtra por tribunal, órgão, período e tipo de ato, separa a ementa e exporta para CSV.</p>
-      </a>
-    </li>
-  </ul>
-  <p class="rodape">Ferramentas independentes e não oficiais. Não pertencem ao CNJ, a tribunais ou a qualquer órgão público, e não substituem a consulta às fontes oficiais.</p>
-</main>
+
+  <main>
+    <section class="abertura">
+      <div class="texto">
+        <h1>Publicações judiciais, direto da fonte.</h1>
+        <p class="sub">Busque acórdãos, decisões e intimações no Diário de Justiça Eletrônico Nacional, separe a ementa do resto do texto e leve os resultados para uma planilha.</p>
+        <div class="acao">
+          <a class="botao" href="djen/">Abrir a consulta</a>
+          <small>Sem cadastro. Funciona direto no navegador.</small>
+        </div>
+      </div>
+      <div class="ilustra">
+        <svg viewBox="0 0 420 330" aria-hidden="true" focusable="false">
+          <rect class="folha" x="8" y="8" width="404" height="314" rx="6"/>
+          <rect class="titulo" x="32" y="32" width="150" height="10" rx="2"/>
+          <rect class="aba-ativa" x="32" y="60" width="74" height="28" rx="4"/>
+          <text x="69" y="78.5" text-anchor="middle">Ementa</text>
+          <rect class="aba" x="114" y="60" width="66" height="28" rx="4"/>
+          <text x="147" y="78.5" text-anchor="middle">Trecho</text>
+          <rect class="aba" x="188" y="60" width="124" height="28" rx="4"/>
+          <text x="250" y="78.5" text-anchor="middle">Acórdão completo</text>
+
+          <rect class="linha" x="32" y="116" width="356" height="9" rx="2"/>
+          <rect class="linha" x="32" y="140" width="330" height="9" rx="2"/>
+          <rect class="linha" x="32" y="164" width="344" height="9" rx="2"/>
+          <rect class="grifo g1" x="118" y="164" width="104" height="9" rx="2"/>
+          <rect class="linha" x="32" y="188" width="300" height="9" rx="2"/>
+          <rect class="linha" x="32" y="224" width="352" height="9" rx="2"/>
+          <rect class="grifo g2" x="32" y="224" width="84" height="9" rx="2"/>
+          <rect class="linha" x="32" y="248" width="340" height="9" rx="2"/>
+          <rect class="grifo g3" x="206" y="248" width="120" height="9" rx="2"/>
+          <rect class="linha" x="32" y="272" width="206" height="9" rx="2"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="recursos">
+      <h2>O que você consegue fazer</h2>
+      <ul class="lista">
+        <li>
+          <h3>Combinar o que você sabe</h3>
+          <p>Termos do texto, número do processo, parte, advogado ou OAB, órgão julgador e período, tudo na mesma busca.</p>
+        </li>
+        <li>
+          <h3>Ampliar quando o termo exato não basta</h3>
+          <p>A busca ampliada procura também variações e termos relacionados e ordena os resultados pelo que mais se aproxima do tema.</p>
+        </li>
+        <li>
+          <h3>Ler a ementa primeiro</h3>
+          <p>Em cada acórdão, alterne entre a ementa, o trecho em volta do termo e o texto completo.</p>
+        </li>
+        <li>
+          <h3>Levar o resultado para a planilha</h3>
+          <p>Exporte em CSV ou copie para a planilha, com os campos já separados.</p>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p>Os dados vêm da API pública de comunicações do CNJ, a mesma base do portal Comunica PJe. As buscas e os filtros ficam guardados só no seu navegador.</p>
+    <p><strong>Consulta DJEN</strong> é uma ferramenta independente e não oficial. Não pertence ao CNJ, ao TJMA nem a qualquer tribunal, e não substitui a consulta às fontes oficiais. Confira sempre a publicação original antes de usar o resultado.</p>
+  </footer>
+</div>
 </body>
 </html>
