@@ -1,6 +1,6 @@
-# Consulta DJEN
+# Indagatio
 
-Site estático (sem servidor, sem banco de dados, sem cadastro).
+*Indagatio*, em latim, é a busca, a investigação. Site estático (sem servidor, sem banco de dados, sem cadastro).
 
 - `index.html`: página inicial, com a apresentação e o botão para a consulta.
 - `djen/index.html`: a ferramenta de busca de publicações na API pública de comunicações do CNJ
