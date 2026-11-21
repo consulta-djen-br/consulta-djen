@@ -1,0 +1,2350 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://comunicaapi.pje.jus.br; img-src data:; base-uri 'none'; form-action 'none'"><meta name="robots" content="noindex">
+<title>Consulta DJEN</title>
+<style>
+/* Folha de trabalho em coluna única: 1) busca na API do DJEN, 2) lista de resultados com filtros.
+   Fontes do sistema, sem nenhum recurso externo: o arquivo só conversa com a API do CNJ. */
+:root {
+  --bg: #f1f4f8;
+  --surface: #ffffff;
+  --ink: #132033;
+  --ink-2: #4a5b70;
+  --line: #d3dae3;
+  --line-strong: #aeb9c7;
+  --accent: #1b4e8d;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2ecf8;
+  --mark-bg: #ffe27d;
+  --mark-fg: #2a2100;
+  --warn-bg: #fff1d0;
+  --warn-fg: #664000;
+  --warn-line: #e6c36b;
+  --bad-bg: #fde5e3;
+  --bad-fg: #6e1a14;
+  --bad-line: #e49b94;
+  --focus: #1b4e8d;
+  --f-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-cond: "Segoe UI Semibold", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
+    --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #6a5712; --mark-fg: #fff0b3;
+    --warn-bg: #3a2e0f; --warn-fg: #f2d58a; --warn-line: #6b5420;
+    --bad-bg: #3c1815; --bad-fg: #f5b9b3; --bad-line: #7a3029; --focus: #86b4ee;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
+  --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #6a5712; --mark-fg: #fff0b3;
+  --warn-bg: #3a2e0f; --warn-fg: #f2d58a; --warn-line: #6b5420;
+  --bad-bg: #3c1815; --bad-fg: #f5b9b3; --bad-line: #7a3029; --focus: #86b4ee;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1060px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--f-cond); font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+
+.topo { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--f-cond); font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.1; letter-spacing: -.01em; }
+.lead { color: var(--ink-2); max-width: 66ch; }
+.rodape { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+.rodape a { color: var(--accent); }
+.selo { align-self: flex-start; font-size: 12.5px; border: 1px solid var(--accent); color: var(--accent); border-radius: 3px; padding: 1px 8px; }
+
+.etapa { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.etapa-cab { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.etapa-num { font-family: var(--f-mono); font-size: 13px; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 6px; line-height: 20px; }
+h2 { font-size: 21px; letter-spacing: -.005em; }
+.etapa-sub { color: var(--ink-2); flex-basis: 100%; max-width: 72ch; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 28px; }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+label, .rotulo { font-family: var(--f-cond); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dica { font-size: 13px; color: var(--ink-2); }
+input[type="text"], input[type="date"], input[type="search"], select, textarea {
+  font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line-strong); border-radius: 3px; padding: 8px 10px; width: 100%; min-width: 0;
+}
+textarea { resize: vertical; line-height: 1.45; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+.linha { display: flex; gap: 12px; flex-wrap: wrap; }
+.linha > .campo { flex: 1 1 140px; }
+.linha > .campo.estreito { flex: 0 1 90px; }
+details.mais > summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--accent); width: fit-content; }
+details.mais[open] > summary { margin-bottom: 12px; }
+details.mais .col { gap: 12px; }
+
+button, .btn {
+  font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 38px; padding: 6px 14px; border-radius: 3px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+}
+button:hover:not(:disabled), .btn:hover { background: var(--accent-soft); }
+button:disabled { opacity: .5; cursor: default; }
+.primario { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.primario:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+.mini { min-height: 28px; padding: 2px 9px; font-size: 13px; }
+.acoes { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.opcao { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; text-transform: none; letter-spacing: 0; font-family: var(--f-ui); color: var(--ink); }
+.opcao input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.aviso { border-radius: 3px; padding: 10px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--warn-line); background: var(--warn-bg); color: var(--warn-fg); }
+.aviso.erro { border-color: var(--bad-line); background: var(--bad-bg); color: var(--bad-fg); }
+.aviso a { color: inherit; }
+.aviso ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.aviso textarea { font-family: var(--f-mono); font-size: 12px; }
+.status { min-height: 22px; font-size: 14px; color: var(--ink-2); }
+
+.andamento { display: flex; flex-direction: column; gap: 8px; }
+progress { width: 100%; height: 10px; accent-color: var(--accent); }
+.andamento-txt { font-size: 14px; }
+.espera { font-size: 14px; color: var(--warn-fg); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 3px; padding: 6px 10px; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); font-size: 14px; }
+.log li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
+.log .l-rot { font-weight: 600; overflow-wrap: anywhere; }
+.log .l-mal { color: var(--bad-fg); }
+.manual { display: flex; flex-direction: column; gap: 8px; }
+.manual textarea { font-family: var(--f-mono); font-size: 13px; }
+
+.filtros { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.resumo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line-strong); padding-top: 14px; }
+.resumo-txt { font-weight: 500; }
+
+.regs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.reg { display: flex; flex-direction: column; gap: 8px; padding: 18px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.reg:first-child { padding-top: 6px; }
+.reg-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.proc { font-family: var(--f-mono); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.data { margin-left: auto; font-family: var(--f-mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.orgao { font-weight: 500; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--ink-2); }
+.chip { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 1px 8px; font-weight: 600; font-size: 12.5px; }
+.chip.vazado { background: transparent; border: 1px solid var(--line-strong); color: var(--ink-2); font-weight: 500; }
+.par { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 10px; font-size: 14px; }
+.par .rotulo { padding-top: 2px; }
+.par div:last-child { overflow-wrap: anywhere; }
+.trecho { font-size: 15px; line-height: 1.55; max-width: 80ch; overflow-wrap: anywhere; }
+mark { background: var(--mark-bg); color: var(--mark-fg); padding: 0 2px; border-radius: 2px; }
+details > summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--accent); width: fit-content; }
+.inteiro { position: relative; margin-top: 10px; max-height: 26rem; overflow: auto; border: 1px solid var(--line); background: var(--bg); border-radius: 3px; padding: 12px 14px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.painel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.vistas { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.vistas button { min-height: 28px; padding: 2px 10px; font-size: 13px; }
+.vistas button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.vistas button[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+.vistas .espaco { margin-left: auto; }
+.vista-area { min-width: 0; }
+.vista-area .inteiro { margin-top: 0; max-height: 30rem; }
+.ementa { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; display: flex; flex-direction: column; gap: 6px; max-width: 84ch; }
+.em-tit { font-family: var(--f-cond); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-top: 6px; }
+.em-p { font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; }
+.em-p.chave { font-weight: 600; }
+.variacoes { gap: 10px; }
+.var-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--warn-line); }
+.var-lista li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--warn-line); }
+.variacoes .opcao { color: inherit; align-items: baseline; }
+.var-lista input { width: 18px; height: 18px; accent-color: var(--accent); align-self: center; }
+.var-termo { font-weight: 600; overflow-wrap: anywhere; }
+.var-tipo { font-size: 12px; font-weight: 500; opacity: .85; margin-left: 8px; }
+.var-n { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.var-obs { grid-column: 2 / 4; font-size: 12.5px; opacity: .9; }
+.var-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.var-add input { flex: 1 1 220px; width: auto; background: var(--surface); }
+.var-resumo { font-size: 14px; font-weight: 500; }
+.vazio { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 0 6px; color: var(--ink-2); max-width: 64ch; }
+.nota { font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+.tecnico { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; font-size: 13px; }
+.tecnico pre { margin: 0; max-height: 18rem; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; font-family: var(--f-mono); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tecnico ul { margin: 0; padding-left: 18px; }
+.tecnico a { color: var(--accent); overflow-wrap: anywhere; }
+
+@media (max-width: 800px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .filtros { grid-template-columns: minmax(0, 1fr); }
+  .etapa { padding: 18px 16px 20px; }
+  h1 { font-size: 26px; }
+  .data { margin-left: 0; flex-basis: 100%; }
+  .par { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topo">
+    <div class="eyebrow">Diário de Justiça Eletrônico Nacional</div>
+    <h1>Consulta DJEN</h1>
+    <p class="lead">Busca direto na API oficial de comunicações do CNJ, a mesma base do portal Comunica PJe. Esta página só se conecta ao CNJ; nada do que aparece aqui é guardado fora deste navegador.</p>
+    <span id="selo-origem" class="selo" hidden>Executando a partir do endereço da própria API</span>
+    <div id="aviso-previa" class="aviso" hidden>Você está vendo esta página dentro de outro programa (uma prévia). Nesse modo ela costuma não conseguir consultar o CNJ. Salve o arquivo no computador e abra-o direto no Chrome ou no Edge.</div>
+  </header>
+
+  <section class="etapa" aria-labelledby="h-busca">
+    <div class="etapa-cab">
+      <span class="etapa-num">1</span>
+      <h2 id="h-busca">Buscar</h2>
+      <p class="etapa-sub">Preencha o que souber. Termos e processos aceitam vários valores, um por linha; cada um vira uma consulta.</p>
+    </div>
+
+    <form id="form" novalidate autocomplete="off">
+      <div class="cols">
+        <div class="col">
+          <div class="campo">
+            <label for="termos">Termos no texto da publicação</label>
+            <textarea id="termos" rows="4" spellcheck="false" placeholder="ex.: cheia atípica&#10;superendividamento"></textarea>
+            <span class="dica">Uma busca por linha. Do jeito normal, a API procura o que você digitou como uma frase (as palavras juntas e nessa ordem), por isso um tema com várias palavras pode não achar nada.</span>
+            <label class="opcao"><input id="ampliar" type="checkbox"> Ampliar a busca (palavras separadas e termos relacionados)</label>
+            <span class="dica">Em vez de baixar logo, mostra as variações do tema (frase, pares de palavras, palavras soltas e sugestões de termos relacionados) com o número de publicações de cada uma. Você marca o que quer baixar e o resultado vem ordenado pelo que mais se aproxima do tema.</span>
+          </div>
+          <div class="campo">
+            <label for="processos">Números de processo</label>
+            <textarea id="processos" rows="3" spellcheck="false" placeholder="0000000-00.0000.8.10.0000"></textarea>
+            <span class="dica">Um por linha, com ou sem pontos e traço. Para acompanhar processos específicos, deixe o período em “Todo o período”.</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="linha">
+            <div class="campo"><label for="sigla">Tribunal</label><input id="sigla" type="text" maxlength="12" value="TJMA" spellcheck="false"></div>
+            <div class="campo"><label for="meio">Meio</label>
+              <select id="meio"><option value="">Todos</option><option value="D">Diário eletrônico</option><option value="E">Edital</option></select>
+            </div>
+          </div>
+          <div class="campo">
+            <label for="periodo">Período de disponibilização</label>
+            <select id="periodo">
+              <option value="hoje">Hoje</option>
+              <option value="ontem">Ontem</option>
+              <option value="7" selected>Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="custom">Escolher datas</option>
+              <option value="todo">Todo o período</option>
+            </select>
+          </div>
+          <div class="linha">
+            <div class="campo"><label for="ini">De</label><input id="ini" type="date"></div>
+            <div class="campo"><label for="fim">Até</label><input id="fim" type="date"></div>
+          </div>
+          <div class="campo">
+            <label for="orgao-busca">Órgão (opcional)</label>
+            <input id="orgao-busca" type="text" list="lista-orgaos-busca" autocomplete="off" spellcheck="false" placeholder="ex.: nome da câmara ou da vara">
+            <datalist id="lista-orgaos-busca"></datalist>
+            <span id="orgao-dica" class="dica"></span>
+          </div>
+          <details id="mais-filtros" class="mais">
+            <summary>Buscar por parte, advogado ou OAB</summary>
+            <div class="col">
+              <div class="campo"><label for="parte">Nome da parte</label><input id="parte" type="text" spellcheck="false"></div>
+              <div class="campo"><label for="advogado">Nome do advogado</label><input id="advogado" type="text" spellcheck="false"></div>
+              <div class="linha">
+                <div class="campo"><label for="oab">Número da OAB</label><input id="oab" type="text" inputmode="numeric" spellcheck="false"></div>
+                <div class="campo estreito"><label for="uf">UF</label><input id="uf" type="text" maxlength="2" value="MA" spellcheck="false"></div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div class="acoes" style="margin-top:18px">
+        <button type="button" id="buscar" class="primario">Buscar</button>
+        <button type="button" id="cancelar" hidden>Cancelar</button>
+        <label class="opcao"><input id="manter" type="checkbox"> Manter os resultados anteriores</label>
+        <span id="status" class="status" role="status" aria-live="polite"></span>
+      </div>
+    </form>
+
+    <div id="erro-busca" class="aviso erro" hidden>
+      <div id="erro-txt"></div>
+      <details id="erro-det"><summary>Detalhes técnicos</summary><div id="erro-tec" class="tecnico"></div></details>
+    </div>
+
+    <div id="planob" class="aviso" hidden>
+      <div><strong>Plano B, sem restrição do navegador.</strong> Quando o navegador impede um arquivo local de consultar a API (ou a rede em que você está bloqueia o endereço desta página), dá para rodar esta mesma ferramenta a partir da página da própria API:</div>
+      <ol>
+        <li>Abra <a id="swagger-link" href="#" target="_blank" rel="noopener noreferrer"></a> em outra aba.</li>
+        <li>Aperte F12 e abra a aba <em>Console</em>. Na primeira vez, digite <code>allow pasting</code> e Enter.</li>
+        <li>Clique em <em>Copiar script</em> abaixo, cole no console e aperte Enter. A página vira esta ferramenta.</li>
+      </ol>
+      <div class="acoes"><button type="button" id="copiar-planob" class="mini">Copiar script</button></div>
+    </div>
+
+    <div id="confirma" class="aviso" hidden>
+      <div id="confirma-txt"></div>
+      <div class="acoes">
+        <button type="button" id="conf-sim" class="primario mini"></button>
+        <button type="button" id="conf-nao" class="mini">Cancelar busca</button>
+      </div>
+    </div>
+
+    <div id="variacoes" class="aviso variacoes" hidden>
+      <div><strong>Busca ampliada.</strong> <span id="var-sub"></span></div>
+      <ul id="var-lista" class="var-lista"></ul>
+      <div class="var-add">
+        <input id="var-novo" type="text" autocomplete="off" spellcheck="false" placeholder="adicionar outro termo relacionado" aria-label="Adicionar outro termo relacionado">
+        <button type="button" id="var-add" class="mini">Contar e adicionar</button>
+      </div>
+      <div id="var-resumo" class="var-resumo" aria-live="polite"></div>
+      <div class="acoes">
+        <button type="button" id="var-baixar" class="primario mini">Baixar as marcadas</button>
+        <button type="button" id="var-cancelar" class="mini">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="andamento" class="andamento" hidden>
+      <progress id="prog" max="1" value="0"></progress>
+      <div id="andamento-txt" class="andamento-txt"></div>
+      <div id="espera" class="espera" hidden></div>
+    </div>
+    <ul id="log" class="log" hidden></ul>
+
+    <div id="manual" class="manual" hidden>
+      <p class="dica">O navegador não deixou copiar sozinho. O texto abaixo já está selecionado: copie com Ctrl+C.</p>
+      <textarea id="manual-t" rows="4" readonly></textarea>
+    </div>
+  </section>
+
+  <section class="etapa" aria-labelledby="h-res">
+    <div class="etapa-cab">
+      <span class="etapa-num">2</span>
+      <h2 id="h-res">Resultados</h2>
+      <p class="etapa-sub">Filtre a lista sem precisar buscar de novo, marque termos e leve tudo para uma planilha.</p>
+    </div>
+
+    <div class="filtros">
+      <div class="campo"><label for="filtro">Filtrar na lista</label><input id="filtro" type="search" autocomplete="off" spellcheck="false" placeholder="processo, parte, advogado ou palavra do texto"></div>
+      <div class="campo"><label for="f-orgao">Órgão</label><input id="f-orgao" type="search" list="lista-orgaos" autocomplete="off" spellcheck="false" placeholder="ex.: parte do nome do órgão"><datalist id="lista-orgaos"></datalist></div>
+      <div class="campo"><label for="f-ato">Ato</label><select id="f-ato"></select></div>
+    </div>
+    <div class="filtros">
+      <div class="campo"><label for="destaque">Termos a marcar no texto</label><input id="destaque" type="text" autocomplete="off" spellcheck="false" placeholder="separe por ponto e vírgula"></div>
+      <div class="campo"><label for="f-onde">Onde o termo aparece</label>
+        <select id="f-onde"><option value="tudo">Em qualquer parte</option><option value="ementa">Na ementa</option><option value="fora">Só fora da ementa</option></select></div>
+      <div class="campo"><label for="f-modo">Mostrar em cada resultado</label>
+        <select id="f-modo"><option value="ementa">Ementa (quando houver)</option><option value="trecho">Trecho em volta do termo</option></select></div>
+    </div>
+    <div id="bloco-relev" class="filtros" hidden>
+      <div class="campo"><label for="f-ordem">Ordenar por</label>
+        <select id="f-ordem"><option value="relevancia">Mais relevantes primeiro</option><option value="data">Mais recentes primeiro</option></select></div>
+      <div class="campo"><label for="f-min">Palavras do tema no texto</label>
+        <select id="f-min"><option value="0">Qualquer quantidade</option></select></div>
+    </div>
+    <p class="dica">A ementa é separada do acórdão pelo rótulo “Ementa:”. “Onde o termo aparece” usa os termos da caixa à esquerda (por padrão, os da busca; na busca ampliada, qualquer um deles). Em cada acórdão dá para alternar entre ementa, trecho e texto completo.</p>
+    <div><label class="opcao"><input id="agrupar" type="checkbox" checked> Juntar comunicações do mesmo processo e texto</label></div>
+
+    <div class="resumo">
+      <span id="resumo" class="resumo-txt" aria-live="polite"></span>
+      <div class="acoes">
+        <button type="button" id="baixar-csv" class="mini">Baixar CSV</button>
+        <button type="button" id="copiar-tabela" class="mini">Copiar para planilha</button>
+        <button type="button" id="copiar-nums" class="mini">Copiar números dos processos</button>
+        <button type="button" id="limpar" class="mini">Limpar lista</button>
+      </div>
+    </div>
+
+    <ol id="regs" class="regs"></ol>
+    <div id="vazio" class="vazio" hidden></div>
+    <div class="acoes"><button type="button" id="mais" hidden></button></div>
+    <p class="nota">Ato, classe, relator e ementa são lidos do texto e dos campos da publicação e servem de apoio para filtrar. Se algum acórdão tiver outro formato, a ementa pode vir incompleta ou não aparecer: use “Texto completo”. Confira no inteiro teor antes de usar.</p>
+
+    <details id="diag">
+      <summary>Dados técnicos desta busca</summary>
+      <div id="diag-corpo" class="tecnico"></div>
+    </details>
+  </section>
+  <footer class="rodape"><p><strong>Consulta DJEN</strong> é uma ferramenta independente e não oficial. Não pertence ao TJMA, ao CNJ nem a qualquer tribunal, e não substitui a consulta ao Diário oficial nem ao portal Comunica PJe. Confira sempre a publicação original antes de usar o resultado.</p><p>Os dados vêm da API pública de comunicações do CNJ. As buscas, os filtros e os códigos de órgão aprendidos ficam só neste navegador; nada é enviado para este site.</p><p><a href="../">← Outras ferramentas</a></p></footer>
+</div>
+
+<script>
+/* Leitor do texto copiado da tela de resultados do portal de comunicações (DJEN).
+   Funciona só com o texto colado: não faz nenhuma chamada de rede. */
+(function (root) {
+  'use strict';
+
+  var RE_PROC = /^Processo\s+(\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})\s*$/;
+  var RE_ADV = /^.{3,140}?\s-\s*OAB\s*\/?\s*[A-Z]{2}\s*-?\s*\d[\dA-Za-z.\-]*\s*$/;
+  var RE_RUIDO_FINAL = /^(Anterior|Pr[óo]xim[ao]|P[áa]gina.*|Itens por p[áa]gina.*|«|»|‹|›|\d{1,3})$/i;
+  var BOTOES = { 'Imprimir': 1, 'Copiar': 1, 'Copiar sem formatação': 1 };
+
+  var ATOS = ['DECISÃO MONOCRÁTICA', 'DECISÃO LIMINAR', 'DECISÃO INTERLOCUTÓRIA', 'ACÓRDÃO',
+    'SENTENÇA', 'DESPACHO', 'ATO ORDINATÓRIO', 'TERMO DE AUDIÊNCIA', 'DECISÃO'];
+  var RE_ATO = new RegExp('(?<![A-ZÀ-Ú])(' + ATOS.join('|') + ')(?![A-ZÀ-Ú])');
+
+  var CLASSES = ['AGRAVO DE INSTRUMENTO', 'AGRAVO INTERNO', 'APELAÇÃO CÍVEL', 'APELAÇÃO CRIMINAL',
+    'EMBARGOS DE DECLARAÇÃO', 'HABEAS CORPUS', 'MANDADO DE SEGURANÇA', 'AÇÃO RESCISÓRIA',
+    'CONFLITO DE COMPETÊNCIA', 'REMESSA NECESSÁRIA', 'PROCEDIMENTO DE REPACTUAÇÃO DE DÍVIDAS'];
+  var RE_CLASSE_UP = new RegExp('(?<![A-ZÀ-Ú])(' + CLASSES.join('|') + ')(?![A-ZÀ-Ú])');
+
+  function limpar(s) { return String(s).replace(/\s+/g, ' ').trim(); }
+
+  function paraTitulo(s) {
+    var peq = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1 };
+    return s.toLowerCase().split(' ').map(function (p, i) {
+      return (i > 0 && peq[p]) ? p : p.charAt(0).toUpperCase() + p.slice(1);
+    }).join(' ');
+  }
+
+  function semAcento(s) {
+    return s.normalize('NFC').replace(/[À-ÿ]/g, function (c) { return c.normalize('NFD').charAt(0); });
+  }
+
+  /* chave estável para agrupar e remover repetidos */
+  function assinatura(s) {
+    var t = semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    return t.length + ':' + t.slice(0, 160);
+  }
+
+  function detectarAto(texto) {
+    var m = RE_ATO.exec(texto.slice(0, 3000));
+    return m ? paraTitulo(m[1]) : '';
+  }
+
+  function detectarRelator(texto) {
+    var m = /Relator(?:a)?\s*:\s*(.{3,100})/.exec(texto);
+    if (!m) return '';
+    var v = m[1].split(/\s+["“(\[]|\s+(?:DECISÃO|ACÓRDÃO|EMENTA|Ementa|DESPACHO|SENTENÇA|Órgão|Orgão|Revisor(?:a)?|Agravante|Apelante|Agravado|Apelado|Embargante|Embargado|Recorrente|Recorrido|Impetrante|Paciente|Autor|Requerente|Requerido|Exequente|Executado)\b/)[0];
+    v = limpar(v);
+    return v.length >= 4 && v.length <= 80 ? v : '';
+  }
+
+  function detectarClasse(texto) {
+    var m = /Classe\s*:\s*(.{3,70}?)(?=\s+(?:Parte|Requerente|Requerido|Polo|Órgão|Assunto)\b|$)/.exec(texto.slice(0, 1500));
+    if (m) return limpar(m[1]);
+    var u = RE_CLASSE_UP.exec(texto.slice(0, 600));
+    return u ? paraTitulo(u[1]) : '';
+  }
+
+  /* ---------- ementa ----------
+     A API devolve o acórdão num texto só. Formato real observado no TJMA:
+       "<órgão> <classe e partes> Relator: ... Órgão Julgador Colegiado: ... Ementa: <palavras-chave> I. CASO EM EXAME ...
+        IV. DISPOSITIVO E TESE ... Tese de julgamento: ... Jurisprudência relevante citada: ... ACÓRDÃO Vistos, relatados ...
+        RELATÓRIO ... VOTO ..."
+     Outra variação vista no TJMA (2ª Câmara Criminal): "Ementa. Direito processual penal. ... I. Caso em exame ..." (ponto em vez de dois-pontos, títulos sem caixa alta).
+     A ementa vai do rótulo "Ementa:" até o título que abre o acórdão propriamente dito. Leitura de melhor esforço. */
+  var RE_EMENTA_INI = /(?:^|[\s(\[])(?:Ementa\s*:|Ementa\.(?=\s+[A-ZÀ-Ú])|EMENTA\b\s*[:.]?)\s*/g;
+  var RE_EMENTA_FIM = [
+    /\s(?:A\s?C\s?[ÓO]\s?R\s?D\s?[ÃA]\s?O)(?=\s+(?:N[º°o.]|\d|Vistos|VISTOS|Acordam|ACORDAM|Relat|RELAT|Participaram|Presentes|Sess[ãa]o|SESS[ÃA]O|Decidem|DECIDEM|C[âa]mara|C[ÂA]MARA|Tribunal|TRIBUNAL|(?:A|O|Os|As)\s+(?:[A-Za-zÀ-ú]+\s+){0,4}(?:C[ÂAâa]MARA|C[âa]mara|TURMA|Turma|PLEN[ÁA]RIO|Plen[áa]rio|SE[ÇC][ÃA]O|Se[çc][ãa]o|DESEMBARGADOR|Desembargador|TRIBUNAL|Tribunal)))/g,
+    /\sDECIS[ÃA]O(?=\s+(?:Trata-se|TRATA-SE|Cuida-se|CUIDA-SE|Vistos|VISTOS|Relat|RELAT|Monocr|MONOCR|Liminar|LIMINAR))/g,
+    /\sVistos,?\s+relatados/gi,
+    /\s(?:ACORDAM|Acordam)\b/g,
+    /\sRELAT[ÓO]RIO\b/g,
+    /\sVOTO\b/g
+  ];
+  var EMENTA_MAX_SEM_FIM = 6000;
+  var RE_SECAO = new RegExp(
+    '(?:^|\\s)((?:VIII|VII|VI|IV|V|III|II|I)\\.\\s+(?:\\p{Lu}{2,}(?:\\s+\\p{Lu}+){0,7}|Caso em exame|Quest[ãa]o em discuss[ãa]o|Raz[õo]es de decidir|Dispositivo e tese))(?=\\s|$)' +
+    '|(?:^|\\s)((?:Teses?\\s+de\\s+julgamento|Dispositivos?\\s+relevantes?\\s+citados?|Jurisprud[êe]ncia\\s+relevante\\s+citada|Legisla[çc][ãa]o\\s+relevante\\s+citada|Precedentes?\\s+relevantes?\\s+citados?)\\s*:)',
+    'gu');
+
+  /* Divide a ementa em seções (I. CASO EM EXAME, Tese de julgamento etc.). Sem títulos, devolve um bloco só. */
+  function secionarEmenta(txt) {
+    var marcas = [], m;
+    RE_SECAO.lastIndex = 0;
+    while ((m = RE_SECAO.exec(txt))) {
+      var titulo = (m[1] || m[2]).replace(/\s*:\s*$/, '').replace(/\s+/g, ' ');
+      var ini = m.index + m[0].indexOf(m[1] || m[2]);
+      marcas.push({ ini: ini, corpoIni: ini + (m[1] || m[2]).length, titulo: titulo });
+      if (m[0].length === 0) RE_SECAO.lastIndex++;
+    }
+    var secoes = [];
+    var primeiro = txt.slice(0, marcas.length ? marcas[0].ini : txt.length).trim();
+    if (primeiro) secoes.push({ titulo: '', texto: primeiro });
+    marcas.forEach(function (mk, i) {
+      var fim = i + 1 < marcas.length ? marcas[i + 1].ini : txt.length;
+      secoes.push({ titulo: mk.titulo, texto: txt.slice(mk.corpoIni, fim).trim() });
+    });
+    return secoes;
+  }
+
+  /* Devolve null quando não há "Ementa:" perto do começo do texto.
+     opcoes.limiteInicio: até onde procurar o rótulo (padrão 3000 caracteres; acórdãos com muitas partes podem pedir mais).
+     opcoes.exigirFim: só aceita se achar o título que encerra a ementa (para textos que apenas citam uma ementa, como intimações de 1º grau). */
+  function extrairEmenta(texto, opcoes) {
+    texto = String(texto || '');
+    var limite = (opcoes && opcoes.limiteInicio) || 3000;
+    var m, ini = -1, corpoIni = -1;
+    RE_EMENTA_INI.lastIndex = 0;
+    while ((m = RE_EMENTA_INI.exec(texto))) {
+      if (m.index > limite) break;
+      if (m[0].length > 0 && texto.slice(m.index + m[0].length).trim().length > 40) { ini = m.index; corpoIni = m.index + m[0].length; break; }
+    }
+    if (ini < 0) return null;
+
+    var fim = -1;
+    RE_EMENTA_FIM.forEach(function (re) {
+      re.lastIndex = corpoIni + 30;
+      var f = re.exec(texto);
+      if (f && (fim < 0 || f.index < fim)) fim = f.index;
+    });
+    var completa = fim >= 0;
+    if (!completa && opcoes && opcoes.exigirFim) return null;
+    if (!completa) {
+      fim = Math.min(texto.length, corpoIni + EMENTA_MAX_SEM_FIM);
+      if (fim < texto.length) {
+        var corte = texto.lastIndexOf('. ', fim);
+        if (corte > corpoIni + 1500) fim = corte + 1;
+      } else {
+        completa = true; // o texto acaba na ementa (não há mais nada depois dela)
+      }
+    }
+    var ementa = texto.slice(corpoIni, fim).replace(/\s+/g, ' ').trim();
+    if (!ementa) return null;
+    return { texto: ementa, secoes: secionarEmenta(ementa), ini: corpoIni, fim: fim, completa: completa };
+  }
+
+  /* Ementa em texto corrido com quebras de linha entre as seções (para copiar). */
+  function ementaParaCopiar(em) {
+    if (!em) return '';
+    return em.secoes.map(function (s) { return s.titulo ? s.titulo + '\n' + s.texto : s.texto; }).join('\n\n');
+  }
+
+  /* Trecho em volta do primeiro termo encontrado (sem diferenciar maiúsculas e acentos). */
+  function trecho(texto, termos, raio) {
+    raio = raio || 130;
+    var base = semAcento(texto).toLowerCase();
+    var melhor = -1, tam = 0;
+    (termos || []).forEach(function (t) {
+      t = semAcento(String(t)).toLowerCase().trim();
+      if (!t) return;
+      var i = base.indexOf(t);
+      if (i >= 0 && (melhor < 0 || i < melhor)) { melhor = i; tam = t.length; }
+    });
+    if (melhor < 0) {
+      var ini = texto.slice(0, raio * 2);
+      return { texto: ini + (texto.length > ini.length ? '…' : ''), achou: false, pos: -1, len: 0 };
+    }
+    var a = Math.max(0, melhor - raio), b = Math.min(texto.length, melhor + tam + raio);
+    var pre = a > 0 ? '…' : '', pos = b < texto.length ? '…' : '';
+    return { texto: pre + texto.slice(a, b) + pos, achou: true, pos: pre.length + (melhor - a), len: tam };
+  }
+
+  function parse(entrada) {
+    var linhas = String(entrada || '').replace(/\r\n?/g, '\n').split('\n').map(function (l) { return l.trim(); });
+
+    var idx = [];
+    linhas.forEach(function (l, i) { if (RE_PROC.test(l)) idx.push(i); });
+
+    var saida = { termo: '', total: null, itens: [], aviso: '' };
+    if (!idx.length) {
+      saida.aviso = 'Não encontrei nenhum resultado no texto. Cole o texto da tela de resultados inteira (Ctrl+A, Ctrl+C).';
+      return saida;
+    }
+
+    var cab = linhas.slice(0, idx[0]);
+    var iTeor = cab.indexOf('Teor da comunicação');
+    if (iTeor > 0) {
+      for (var k = iTeor - 1; k >= 0; k--) { if (cab[k]) { saida.termo = cab[k]; break; } }
+    }
+    for (var j = cab.length - 1; j >= 0; j--) {
+      if (/^\d+$/.test(cab[j])) { saida.total = parseInt(cab[j], 10); break; }
+      if (cab[j] && !/^[A-Z]{2,}[A-Z0-9 \-]*$/.test(cab[j])) break;
+    }
+
+    idx.forEach(function (ini, n) {
+      var fim = n + 1 < idx.length ? idx[n + 1] : linhas.length;
+      var bloco = linhas.slice(ini, fim);
+      var item = {
+        processo: RE_PROC.exec(bloco[0])[1], orgao: '', data: '', tipo: '', meio: '',
+        partes: [], advogados: [], texto: ''
+      };
+      var i = 1, rot, m;
+      for (; i < bloco.length; i++) {
+        var l = bloco[i];
+        if (!l || BOTOES[l]) continue;
+        if (l === 'Parte(s)') break;
+        if ((m = /^Órgão:\s*(.*)$/.exec(l))) item.orgao = m[1];
+        else if ((m = /^Data de disponibilização:\s*(.*)$/.exec(l))) item.data = m[1];
+        else if ((m = /^Tipo de comunicação:\s*(.*)$/.exec(l))) item.tipo = m[1];
+        else if ((m = /^Meio:\s*(.*)$/.exec(l))) item.meio = m[1];
+      }
+      i++;
+      for (; i < bloco.length; i++) {
+        if (bloco[i] === 'Advogado(s)') { i++; break; }
+        if (bloco[i]) item.partes.push(bloco[i]);
+      }
+      for (; i < bloco.length; i++) {
+        if (!bloco[i]) continue;
+        if (RE_ADV.test(bloco[i])) item.advogados.push(bloco[i]); else break;
+      }
+      var resto = bloco.slice(i).filter(function (l) { return l; });
+      if (n + 1 === idx.length) {
+        while (resto.length && RE_RUIDO_FINAL.test(resto[resto.length - 1])) resto.pop();
+      }
+      item.texto = limpar(resto.join(' '));
+      item.ato = detectarAto(item.texto);
+      item.relator = detectarRelator(item.texto);
+      item.classe = detectarClasse(item.texto);
+      item.assinatura = item.processo + '|' + assinatura(item.texto);
+      item.chave = item.assinatura + '|' + item.partes.join(';');
+      saida.itens.push(item);
+    });
+
+    if (saida.total !== null && saida.total !== saida.itens.length) {
+      saida.aviso = 'O portal informa ' + saida.total + ' resultado(s) e li ' + saida.itens.length +
+        '. Se a lista tem mais de uma página, copie cada página e adicione uma de cada vez.';
+    }
+    return saida;
+  }
+
+  /* Junta comunicações do mesmo processo com o mesmo texto (um registro por destinatário). */
+  function agrupar(itens) {
+    var mapa = {}, ordem = [];
+    itens.forEach(function (it) {
+      var g = mapa[it.assinatura];
+      if (!g) {
+        g = mapa[it.assinatura] = Object.assign({}, it, { partes: [], advogados: [], destinatarios: 0 });
+        ordem.push(g);
+      }
+      it.partes.forEach(function (p) { if (g.partes.indexOf(p) < 0) g.partes.push(p); });
+      it.advogados.forEach(function (a) { if (g.advogados.indexOf(a) < 0) g.advogados.push(a); });
+      g.destinatarios++;
+    });
+    return ordem;
+  }
+
+  var api = {
+    parse: parse, agrupar: agrupar, trecho: trecho, semAcento: semAcento,
+    assinatura: assinatura, detectarAto: detectarAto, detectarRelator: detectarRelator, detectarClasse: detectarClasse,
+    extrairEmenta: extrairEmenta, ementaParaCopiar: ementaParaCopiar
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Comunica = api;
+})(typeof window !== 'undefined' ? window : this);
+
+</script>
+<script>
+/* Cliente da API pública de consulta do DJEN (comunicaapi.pje.jus.br, GET /api/v1/comunicacao).
+   Segue as regras da documentação do CNJ: um único IP, espaçamento entre chamadas, leitura dos
+   cabeçalhos x-ratelimit-*, espera de 1 minuto quando a API responde 429, teto de 10.000 resultados. */
+(function (root) {
+  'use strict';
+  var C = root.Comunica || (typeof require !== 'undefined' ? require('../src/parser.js') : null);
+
+  var TAMANHO = 100;     // valores válidos na API: 5 e 100
+  var TETO = 10000;      // máximo de resultados que a API entrega por consulta
+  var MAX_CONSULTAS = 60;
+
+  function ErroApi(tipo, mensagem, extra) {
+    var e = new Error(mensagem);
+    e.name = 'ErroApi';
+    e.tipo = tipo;
+    if (extra) Object.keys(extra).forEach(function (k) { e[k] = extra[k]; });
+    return e;
+  }
+
+  /* ---------- entrada ---------- */
+  function lerLinhas(texto) {
+    var vistos = {}, saida = [];
+    String(texto || '').split(/\r?\n/).forEach(function (l) {
+      l = l.replace(/\s+/g, ' ').trim();
+      if (l && !vistos[l]) { vistos[l] = 1; saida.push(l); }
+    });
+    return saida;
+  }
+
+  function mascarar(d) {
+    if (d.length !== 20) return d;
+    return d.slice(0, 7) + '-' + d.slice(7, 9) + '.' + d.slice(9, 13) + '.' + d.slice(13, 14) + '.' + d.slice(14, 16) + '.' + d.slice(16);
+  }
+
+  /* Aceita número com ou sem máscara, separado por linha, espaço, vírgula ou ponto e vírgula. */
+  function lerProcessos(texto) {
+    var validos = [], invalidos = [], vistos = {};
+    String(texto || '').split(/[\s,;]+/).forEach(function (tok) {
+      var d = tok.replace(/\D+/g, '');
+      if (!d) return;
+      if (d.length === 20) { if (!vistos[d]) { vistos[d] = 1; validos.push(d); } }
+      else invalidos.push(tok);
+    });
+    return { validos: validos, invalidos: invalidos };
+  }
+
+  function montarUrl(base, p, pagina, tamanho) {
+    var q = [];
+    function add(k, v) { if (v !== undefined && v !== null && String(v) !== '') q.push(k + '=' + encodeURIComponent(v)); }
+    add('siglaTribunal', p.siglaTribunal);
+    add('texto', p.texto);
+    add('nomeParte', p.nomeParte);
+    add('nomeAdvogado', p.nomeAdvogado);
+    add('numeroOab', p.numeroOab);
+    add('ufOab', p.ufOab);
+    add('numeroProcesso', p.numeroProcesso);
+    add('orgaoId', p.orgaoId);
+    add('dataDisponibilizacaoInicio', p.ini);
+    add('dataDisponibilizacaoFim', p.fim);
+    add('meio', p.meio);
+    add('pagina', pagina);
+    add('itensPorPagina', tamanho);
+    return base + (q.length ? '?' + q.join('&') : '');
+  }
+
+  /* Transforma o formulário em uma lista de consultas (cada termo x cada processo). */
+  function planejar(f) {
+    var erros = [], avisos = [];
+    var termos = lerLinhas(f.termos);
+    var pr = lerProcessos(f.processos);
+    if (pr.invalidos.length) {
+      avisos.push('Ignorei ' + pr.invalidos.length + (pr.invalidos.length === 1 ? ' item' : ' itens') +
+        ' sem 20 dígitos de número de processo: ' + pr.invalidos.slice(0, 3).join(', ') + (pr.invalidos.length > 3 ? '…' : '') + '.');
+    }
+    var sigla = String(f.sigla || '').trim().toUpperCase();
+    var parte = String(f.parte || '').replace(/\s+/g, ' ').trim();
+    var adv = String(f.advogado || '').replace(/\s+/g, ' ').trim();
+    var oab = String(f.oab || '').replace(/[^0-9A-Za-z]/g, '');
+    var uf = String(f.uf || '').trim().toUpperCase();
+    var meio = f.meio === 'D' || f.meio === 'E' ? f.meio : '';
+    var orgaoId = String(f.orgaoId || '').replace(/\D+/g, '');
+    var ini = f.ini || '', fim = f.fim || '';
+
+    if (ini && fim && fim < ini) erros.push('A data final é anterior à inicial. Ajuste o período.');
+    if (oab && !/^[A-Z]{2}$/.test(uf)) erros.push('Informe a UF da OAB com duas letras, por exemplo MA.');
+    if (!sigla && !termos.length && !pr.validos.length && !parte && !adv && !oab && !orgaoId) {
+      erros.push('Preencha ao menos o tribunal, um termo, um processo, uma parte, um advogado ou a OAB.');
+    }
+    var ts = termos.length ? termos : [''];
+    var ps = pr.validos.length ? pr.validos : [''];
+    if (ts.length * ps.length > MAX_CONSULTAS) {
+      erros.push('São ' + (ts.length * ps.length) + ' buscas combinadas (cada termo vale para cada processo). O máximo é ' + MAX_CONSULTAS + ' por vez.');
+    }
+    var consultas = [];
+    if (!erros.length) {
+      ts.forEach(function (t) {
+        ps.forEach(function (p) {
+          var rotulo = [t, p ? mascarar(p) : ''].filter(Boolean).join(' · ');
+          if (!rotulo) {
+            rotulo = parte ? 'Parte: ' + parte : adv ? 'Advogado: ' + adv : oab ? 'OAB ' + uf + ' ' + oab : 'Todas as comunicações' + (sigla ? ' do ' + sigla : '');
+          }
+          consultas.push({
+            rotulo: rotulo,
+            params: { siglaTribunal: sigla, texto: t, nomeParte: parte, nomeAdvogado: adv, numeroOab: oab, ufOab: oab ? uf : '', numeroProcesso: p, orgaoId: orgaoId, ini: ini, fim: fim, meio: meio }
+          });
+        });
+      });
+    }
+    return { consultas: consultas, termos: termos, erros: erros, avisos: avisos };
+  }
+
+  /* ---------- resposta ---------- */
+  function htmlParaTexto(s) {
+    s = String(s == null ? '' : s);
+    var temHtml = /<\/?[a-z][^>]*>/i.test(s) || /&(?:[a-z]+|#\d+|#x[0-9a-f]+);/i.test(s);
+    if (temHtml) {
+      var t = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|tr|h[1-6]|table)>/gi, '\n');
+      if (typeof DOMParser !== 'undefined') {
+        try { t = new DOMParser().parseFromString(t, 'text/html').documentElement.textContent || ''; }
+        catch (e) { t = t.replace(/<[^>]*>/g, ''); }
+      } else {
+        t = t.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+      }
+      s = t;
+    }
+    return s.replace(/\r\n?/g, '\n').replace(/[ \t ]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function isoData(s) {
+    s = String(s || '');
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    if (m) return m[1] + '-' + m[2] + '-' + m[3];
+    m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(s);
+    return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+  }
+  function brData(iso) { return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : ''; }
+
+  function nomeAdvogado(a) {
+    if (!a || typeof a !== 'object') return '';
+    var nome = a.nome || a.nomeAdvogado || '';
+    var num = a.numero_oab || a.numeroOab || a.oab || '';
+    var uf = a.uf_oab || a.ufOab || a.uf || '';
+    if (!nome) return '';
+    return nome + (num ? ' - OAB ' + (uf ? uf + '-' : '') + num : '');
+  }
+
+  function coletarAdvogados(lista, saida) {
+    (Array.isArray(lista) ? lista : []).forEach(function (x) {
+      var a = x && typeof x === 'object' && x.advogado && typeof x.advogado === 'object' ? x.advogado : x;
+      var s = nomeAdvogado(a);
+      if (s && saida.indexOf(s) < 0) saida.push(s);
+    });
+  }
+
+  var RE_DOC_INFORMATIVO = /^(ac[óo]rd[ãa]o|senten[çc]a|decis[ãa]o|despacho|ato ordinat[óo]rio|termo de audi[êe]ncia)/i;
+
+  /* A API devolve algumas classes em caixa alta com acentos em minúscula ("APELAçãO"): conserta só esses casos. */
+  function arrumarCaixa(s) {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    var letras = s.match(/\p{L}/gu) || [];
+    if (!letras.length) return s;
+    var maiusc = letras.filter(function (c) { return c !== c.toLowerCase(); }).length;
+    return maiusc / letras.length >= 0.6 ? s.toLocaleUpperCase('pt-BR') : s;
+  }
+
+  function urlSegura(u) {
+    u = String(u || '').trim();
+    return /^https?:\/\//i.test(u) ? u : '';
+  }
+
+  /* Acórdãos, ementas e decisões têm ementa própria (o cabeçalho de acórdão com muitas partes pode ser longo). Em outros tipos
+     (intimação, sentença, despacho...) o "Ementa:" costuma ser citação de outro julgado: só vale se o título que encerra a ementa aparecer. */
+  function ementaDe(texto, tdoc) {
+    if (/ac[óo]rd[ãa]o/i.test(tdoc)) return C.extrairEmenta(texto, { limiteInicio: 12000 });
+    if (/^(ementa|decis[ãa]o)/i.test(tdoc)) return C.extrairEmenta(texto, { limiteInicio: 3000 });
+    return C.extrairEmenta(texto, { limiteInicio: 3000, exigirFim: true });
+  }
+
+  /* Leitura defensiva: aceita variações de nome de campo e ignora o que não reconhece. */
+  function normalizar(raw) {
+    raw = raw || {};
+    var texto = htmlParaTexto(raw.texto);
+    var numero = String(raw.numero_processo || raw.numeroProcesso || '').replace(/\D+/g, '');
+    var processo = raw.numeroprocessocommascara || mascarar(numero) || '';
+    var iso = isoData(raw.data_disponibilizacao) || isoData(raw.datadisponibilizacao) || isoData(raw.dataDisponibilizacao);
+
+    var partes = [], advogados = [];
+    (Array.isArray(raw.destinatarios) ? raw.destinatarios : []).forEach(function (d) {
+      if (!d || typeof d !== 'object') return;
+      var n = String(d.nome || '').trim();
+      if (n && partes.indexOf(n) < 0) partes.push(n);
+      Object.keys(d).forEach(function (k) { if (Array.isArray(d[k])) coletarAdvogados(d[k], advogados); });
+    });
+    coletarAdvogados(raw.destinatarioadvogados, advogados);
+    coletarAdvogados(raw.advogados, advogados);
+
+    // O tipo de documento informado pela API vale mais que a leitura do texto (um acórdão cita a sentença no corpo).
+    // Quando ele é genérico (ex.: "Intimação"), usa o que o texto indica.
+    var tdoc = String(raw.tipoDocumento || '').trim();
+    var detectado = C.detectarAto(texto);
+    var ato;
+    if (RE_DOC_INFORMATIVO.test(tdoc)) {
+      // a API também usa "Acórdão (expediente)", "Decisão (expediente)": para filtrar, tudo isso é o mesmo ato
+      ato = tdoc.replace(/\s*\(expediente\)\s*$/i, '');
+      if (/^decis[ãa]o$/i.test(ato) && /^Decisão /.test(detectado)) ato = detectado;
+    } else {
+      ato = detectado || tdoc;
+    }
+    var it = {
+      id: raw.id !== undefined && raw.id !== null ? raw.id : null,
+      hash: raw.hash || '',
+      numeroComunicacao: raw.numeroComunicacao !== undefined ? raw.numeroComunicacao : null,
+      processo: processo,
+      orgao: String(raw.nomeOrgao || '').trim(),
+      orgaoId: raw.idOrgao !== undefined && raw.idOrgao !== null && /^\d+$/.test(String(raw.idOrgao)) ? String(raw.idOrgao) : '',
+      dataIso: iso,
+      data: brData(iso) || String(raw.datadisponibilizacao || raw.data_disponibilizacao || ''),
+      tipo: String(raw.tipoComunicacao || '').trim(),
+      tipoDocumento: String(raw.tipoDocumento || '').trim(),
+      meio: String(raw.meiocompleto || raw.meio || '').trim(),
+      link: urlSegura(raw.link),
+      partes: partes,
+      advogados: advogados,
+      texto: texto,
+      ato: ato,
+      relator: C.detectarRelator(texto),
+      classe: arrumarCaixa(raw.nomeClasse) || C.detectarClasse(texto),
+      // Ementa separada do texto (null quando não há "Ementa:" perto do começo).
+      ementa: ementaDe(texto, tdoc),
+      comunicacoes: 1,
+      achadoPor: []
+    };
+    it.assinatura = it.processo + '|' + C.assinatura(texto);
+    it.chave = it.id !== null ? 'id:' + it.id : it.hash ? 'h:' + it.hash : it.assinatura + '|' + partes.join(';');
+    return it;
+  }
+
+  /* Junta comunicações do mesmo processo com o mesmo texto (um registro por destinatário). */
+  function agruparItens(itens) {
+    var mapa = {}, ordem = [];
+    itens.forEach(function (it) {
+      var g = mapa[it.assinatura];
+      if (!g) {
+        g = mapa[it.assinatura] = Object.assign({}, it, { partes: [], advogados: [], achadoPor: [], comunicacoes: 0, _b: undefined, _t: undefined, _e: undefined, _c: undefined, _p: undefined, _pv: undefined });
+        ordem.push(g);
+      }
+      it.partes.forEach(function (p) { if (g.partes.indexOf(p) < 0) g.partes.push(p); });
+      it.advogados.forEach(function (a) { if (g.advogados.indexOf(a) < 0) g.advogados.push(a); });
+      it.achadoPor.forEach(function (a) { if (g.achadoPor.indexOf(a) < 0) g.achadoPor.push(a); });
+      if (!g.link && it.link) g.link = it.link;
+      g.comunicacoes += it.comunicacoes || 1;
+    });
+    return ordem;
+  }
+
+  /* ---------- busca ampliada ----------
+     A API parece procurar o texto digitado como frase (várias palavras na mesma linha só casam se estiverem juntas, nessa ordem;
+     isso foi inferido de uma busca real que não achou nada, e as contagens por variação mostram na prática como ela se comporta).
+     Para achar o assunto quando as palavras aparecem separadas ou com outros nomes, o arquivo:
+       1) quebra a linha em frase, pares de palavras vizinhas e palavras soltas, e junta alguns termos relacionados;
+       2) conta quantas publicações cada variação tem (uma chamada curta por variação) e deixa o usuário escolher o que baixar;
+       3) ordena o resultado pelas palavras da busca que cada texto contém, com peso maior para a ementa. */
+  var PARADAS = {};
+  ('a o as os um uma uns umas de do da dos das em no na nos nas por pelo pela pelos pelas para pra com sem sob sobre entre ate e ou ' +
+   'que se ao aos art arts artigo lei caso quando como mais menos mas ja nao sao ser foi tem ha nem tambem').split(' ').forEach(function (w) { PARADAS[w] = 1; });
+
+  /* Sugestões de termos relacionados para assuntos frequentes no cível. São apenas sugestões: aparecem para o usuário marcar ou não. */
+  var RELACIONADOS = {
+    'preparo': ['deserção', 'custas recursais', 'recolhimento do preparo', 'comprovante de pagamento'],
+    'desercao': ['preparo', 'custas recursais', 'recolhimento em dobro'],
+    'custas': ['preparo', 'taxa judiciária', 'recolhimento'],
+    'gratuidade': ['justiça gratuita', 'assistência judiciária', 'hipossuficiência', 'declaração de pobreza'],
+    'justica gratuita': ['gratuidade', 'hipossuficiência', 'assistência judiciária'],
+    'hipossuficiencia': ['gratuidade', 'justiça gratuita'],
+    'honorarios': ['sucumbência', 'verba honorária', 'honorários advocatícios'],
+    'sucumbencia': ['honorários', 'verba honorária'],
+    'astreintes': ['multa diária', 'multa cominatória'],
+    'multa diaria': ['astreintes', 'multa cominatória'],
+    'tutela': ['tutela de urgência', 'tutela antecipada', 'tutela provisória'],
+    'liminar': ['tutela de urgência', 'tutela antecipada', 'efeito suspensivo'],
+    'efeito suspensivo': ['tutela recursal', 'efeito ativo', 'antecipação da tutela recursal'],
+    'prescricao': ['prazo prescricional', 'decadência', 'prescrição intercorrente'],
+    'decadencia': ['prazo decadencial', 'prescrição'],
+    'dano moral': ['indenização por danos morais', 'danos extrapatrimoniais', 'abalo moral'],
+    'danos morais': ['indenização por danos morais', 'danos extrapatrimoniais', 'abalo moral'],
+    'negativacao': ['inscrição indevida', 'cadastro de inadimplentes', 'serasa'],
+    'revelia': ['contumácia', 'ausência de contestação', 'efeitos da revelia'],
+    'intempestividade': ['tempestividade', 'prazo recursal', 'recurso intempestivo'],
+    'tempestividade': ['intempestividade', 'prazo recursal'],
+    'litispendencia': ['coisa julgada', 'ações idênticas'],
+    'coisa julgada': ['litispendência', 'preclusão'],
+    'preclusao': ['preclusão consumativa', 'preclusão temporal'],
+    'legitimidade': ['ilegitimidade', 'legitimidade passiva', 'legitimidade ativa'],
+    'ilegitimidade': ['legitimidade passiva', 'legitimidade ativa'],
+    'interesse de agir': ['falta de interesse processual', 'necessidade e utilidade'],
+    'inversao do onus da prova': ['ônus da prova', 'hipossuficiência', 'distribuição dinâmica'],
+    'onus da prova': ['inversão do ônus da prova', 'distribuição dinâmica'],
+    'superendividamento': ['repactuação de dívidas', 'mínimo existencial', 'Lei 14.181'],
+    'consignado': ['margem consignável', 'desconto em folha', 'empréstimo consignado'],
+    'rmc': ['cartão de crédito consignado', 'reserva de margem consignável'],
+    'plano de saude': ['operadora', 'rol da ANS', 'negativa de cobertura'],
+    'alimentos': ['pensão alimentícia', 'execução de alimentos'],
+    'pensao alimenticia': ['alimentos', 'prisão civil'],
+    'prisao civil': ['alimentos', 'execução de alimentos'],
+    'reintegracao de posse': ['esbulho', 'turbação'],
+    'usucapiao': ['prescrição aquisitiva', 'posse ad usucapionem'],
+    'despejo': ['locação', 'falta de pagamento de aluguéis'],
+    'seguro': ['seguradora', 'apólice', 'sinistro'],
+    'alienacao fiduciaria': ['busca e apreensão', 'purgação da mora'],
+    'busca e apreensao': ['alienação fiduciária', 'mora do devedor'],
+    'penhora': ['sisbajud', 'bloqueio de valores', 'impenhorabilidade'],
+    'sisbajud': ['penhora online', 'bloqueio de valores', 'bacenjud'],
+    'rescisao': ['resolução contratual', 'distrato', 'retenção de valores'],
+    'embargos': ['embargos de declaração', 'omissão contradição obscuridade'],
+    'agravo interno': ['agravo regimental', 'decisão monocrática'],
+    'competencia': ['conflito de competência', 'declínio de competência'],
+    'prevencao': ['prevenção do relator', 'distribuição por dependência'],
+    'curatela': ['interdição', 'incapacidade civil'],
+    'inventario': ['partilha', 'colação', 'herança'],
+    'consumidor': ['código de defesa do consumidor', 'relação de consumo'],
+    'vicio': ['vício do produto', 'vício oculto', 'vida útil']
+  };
+
+  function simples(s) { return C.semAcento(String(s == null ? '' : s)).toLowerCase(); }
+  function esc(s) { return String(s).replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&'); }
+  var RE_TOKEN = /[\p{L}\p{N}]+(?:[.\-\/][\p{L}\p{N}]+)*/gu;
+
+  /* Palavras que carregam o assunto (sem "de", "da", "o"...), sem repetir. */
+  function palavrasChave(linha) {
+    var vistos = {}, saida = [];
+    (String(linha || '').match(RE_TOKEN) || []).forEach(function (w) {
+      var n = simples(w);
+      if (n.length < 3 || PARADAS[n] || vistos[n]) return;
+      vistos[n] = 1; saida.push({ texto: w, n: n });
+    });
+    return saida;
+  }
+
+  function relacionadosDe(linha) {
+    var toks = (String(linha || '').match(RE_TOKEN) || []).map(simples), achados = [];
+    for (var i = 0; i < toks.length; i++) {
+      for (var len = 1; len <= 4 && i + len <= toks.length; len++) {
+        var rel = RELACIONADOS[toks.slice(i, i + len).join(' ')];
+        if (rel) rel.forEach(function (r) { if (achados.indexOf(r) < 0) achados.push(r); });
+      }
+    }
+    return achados;
+  }
+
+  /* Variações de cada linha. tipo: frase | par | palavra | relacionado. Linha entre aspas = frase exata, sem variações. */
+  function candidatos(linhas, max) {
+    max = max || 14;
+    var grupos = { frase: [], par: [], palavra: [], relacionado: [] }, vistos = {};
+    function add(termo, tipo, linha) {
+      termo = String(termo).replace(/\s+/g, ' ').trim();
+      var n = simples(termo);
+      if (!n || vistos[n]) return;
+      vistos[n] = 1;
+      grupos[tipo].push({ termo: termo, tipo: tipo, linha: linha, n: n });
+    }
+    linhas.forEach(function (linha) {
+      if (/^["“].+["”]$/.test(linha)) { add(linha.replace(/^["“]|["”]$/g, ''), 'frase', linha); return; }
+      var pk = palavrasChave(linha);
+      add(linha, 'frase', linha);
+      for (var i = 0; i + 1 < pk.length; i++) add(pk[i].texto + ' ' + pk[i + 1].texto, 'par', linha);
+      if (pk.length > 1) pk.forEach(function (p) { add(p.texto, 'palavra', linha); });
+      relacionadosDe(linha).forEach(function (r) { add(r, 'relacionado', linha); });
+    });
+    var todos = grupos.frase.concat(grupos.par, grupos.palavra, grupos.relacionado);
+    return { lista: todos.slice(0, max), cortou: todos.length > max };
+  }
+
+  /* O que vale pontos na ordenação: todas as palavras-chave das linhas, as frases (linhas e pares usados) e os relacionados usados. */
+  function montarRelevancia(linhas, usados) {
+    var palavras = [], vistos = {}, frases = [], relacionados = [];
+    linhas.forEach(function (linha) {
+      if (/^["“].+["”]$/.test(linha)) { frases.push(linha.replace(/^["“]|["”]$/g, '')); return; }
+      palavrasChave(linha).forEach(function (p) { if (!vistos[p.n]) { vistos[p.n] = 1; palavras.push(p.texto); } });
+      frases.push(linha);
+    });
+    (usados || []).forEach(function (c) {
+      if (c.tipo === 'par') frases.push(c.termo);
+      if (c.tipo === 'relacionado') relacionados.push(c.termo);
+    });
+    return { palavras: palavras, frases: frases, relacionados: relacionados };
+  }
+
+  function prepararRelevancia(spec) {
+    var vistos = {};
+    return {
+      palavras: spec.palavras.map(function (w) {
+        var n = simples(w);
+        return { n: n, re: new RegExp('(?:^|[^a-z0-9])' + esc(n) + 's?(?![a-z0-9])') };
+      }),
+      frases: spec.frases.map(simples).filter(function (f) { if (!f || vistos[f]) return false; vistos[f] = 1; return true; }),
+      relacionados: spec.relacionados.map(simples)
+    };
+  }
+
+  /* t = texto e e = ementa, ambos já sem acento e em minúsculas. */
+  function pontuar(t, e, rel) {
+    var r = { pontos: 0, achadas: 0, total: rel.palavras.length, naEmenta: 0, frase: false, relacionadas: 0 };
+    rel.palavras.forEach(function (p) {
+      if (p.re.test(t)) {
+        r.achadas++; r.pontos += 1;
+        if (e && p.re.test(e)) { r.naEmenta++; r.pontos += 1; }
+      }
+    });
+    rel.frases.forEach(function (f) {
+      if (t.indexOf(f) >= 0) { r.frase = true; r.pontos += 2; if (e && e.indexOf(f) >= 0) r.pontos += 1; }
+    });
+    rel.relacionados.forEach(function (x) { if (t.indexOf(x) >= 0) { r.relacionadas++; r.pontos += 0.5; } });
+    return r;
+  }
+
+  /* ---------- rede ---------- */
+  function criar(opts) {
+    opts = opts || {};
+    var cfg = Object.assign({
+      base: '',
+      ritmoMs: 600,          // espaço entre chamadas
+      espera429Ms: 60000,    // a API orienta aguardar 1 minuto após um 429
+      tentativas429: 3,
+      tentativas5xx: 3,
+      recuo5xxMs: 3000,
+      limiteAltoMs: 30000,   // espera quando x-ratelimit-remaining chega perto de zero
+      confirmarAcima: 1000   // pergunta antes de baixar mais que isso
+    }, opts.cfg || {});
+    var doFetch = opts.fetch || function (u, o) { return root.fetch(u, o); };
+    var dormir = opts.dormir || function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    var agora = opts.agora || function () { return Date.now(); };
+
+    function cancelado(h) { return !!(h && h.cancelado && h.cancelado()); }
+
+    async function esperar(ms, h, motivo) {
+      var fim = agora() + ms;
+      for (;;) {
+        var resta = fim - agora();
+        if (resta <= 0 || cancelado(h)) return;
+        if (ms >= 2000 && h && h.espera) h.espera(Math.ceil(resta / 1000), motivo);
+        await dormir(Math.min(1000, resta));
+      }
+    }
+
+    function cab(res, nome) {
+      try {
+        var v = res.headers && res.headers.get ? res.headers.get(nome) : null;
+        var n = v === null || v === undefined || v === '' ? NaN : parseInt(v, 10);
+        return isNaN(n) ? null : n;
+      } catch (e) { return null; }
+    }
+    async function corpo(res) { try { return (await res.text()).slice(0, 300); } catch (e) { return ''; } }
+
+    async function pedir(url, h) {
+      var t429 = 0, t5 = 0;
+      for (;;) {
+        if (cancelado(h)) throw ErroApi('cancelado', 'Busca cancelada.');
+        var res;
+        try {
+          res = await doFetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, cache: 'no-store', credentials: 'omit' });
+        } catch (e) {
+          throw ErroApi('rede', 'Não consegui falar com a API do CNJ.', { url: url, causa: String(e && e.message ? e.message : e) });
+        }
+        var lim = cab(res, 'x-ratelimit-limit'), rest = cab(res, 'x-ratelimit-remaining');
+        if (h && h.limite) h.limite({ limite: lim, restantes: rest });
+        if (res.status === 429) {
+          if (++t429 > cfg.tentativas429) throw ErroApi('429', 'A API continuou pedindo para aguardar (limite de requisições). Tente de novo em alguns minutos.', { url: url, status: 429 });
+          var ra = cab(res, 'retry-after');
+          await esperar(Math.max(cfg.espera429Ms, ra ? ra * 1000 : 0), h, 'A API atingiu o limite de requisições. Aguardando para continuar');
+          continue;
+        }
+        if (res.status >= 500) {
+          if (++t5 > cfg.tentativas5xx) throw ErroApi('http', 'A API respondeu com erro ' + res.status + '.', { url: url, status: res.status, corpo: await corpo(res) });
+          await esperar(cfg.recuo5xxMs * t5, h, 'A API respondeu com erro ' + res.status + '. Tentando de novo');
+          continue;
+        }
+        if (res.status === 404) return { vazio: true, rest: rest, lim: lim };
+        if (!res.ok) throw ErroApi('http', 'A API recusou a consulta (erro ' + res.status + ').', { url: url, status: res.status, corpo: await corpo(res) });
+        var dados;
+        try { dados = await res.json(); }
+        catch (e) { throw ErroApi('json', 'A resposta da API não veio no formato esperado (JSON).', { url: url, causa: String(e && e.message ? e.message : e) }); }
+        return { dados: dados, rest: rest, lim: lim };
+      }
+    }
+
+    async function buscarConsulta(q, h) {
+      var tam = TAMANHO, pagina = 1, coletados = 0, count = null;
+      var resumo = { rotulo: q.rotulo, count: null, coletados: 0, truncado: false, recusado: false, erro: null, vazioPor404: false };
+      for (;;) {
+        var url = montarUrl(cfg.base, q.params, pagina, tam);
+        if (h.url) h.url(url);
+        var r = await pedir(url, h);
+        if (r.vazio) { resumo.count = 0; resumo.vazioPor404 = true; break; }
+        var d = r.dados;
+        if (d && !Array.isArray(d) && typeof d.status === 'string' && /^(error|erro|fail|falha)/i.test(d.status)) {
+          throw ErroApi('http', 'A API respondeu: ' + (d.message || d.status), { url: url });
+        }
+        var itens = Array.isArray(d) ? d : (d && Array.isArray(d.items) ? d.items : []);
+        if (pagina === 1) {
+          count = d && !Array.isArray(d) && typeof d.count === 'number' ? d.count : null;
+          // a API pode devolver a contagem sem itens quando o tamanho de página não é aceito: tenta tamanhos menores
+          if (!itens.length && count && tam > 5) { tam = tam === 100 ? 50 : 5; if (h.aviso) h.aviso('A API não entregou itens com a página maior; tentando páginas de ' + tam + '.'); continue; }
+          resumo.count = count;
+          if (count !== null && count > cfg.confirmarAcima && h.confirmar) {
+            var ok = await h.confirmar({ rotulo: q.rotulo, count: count, tamanho: tam, paginas: Math.ceil(Math.min(count, TETO) / tam), acimaDoTeto: count > TETO });
+            if (!ok) { resumo.recusado = true; break; }
+          }
+        }
+        if (h.itens) h.itens(itens.map(normalizar), itens[0], q);
+        coletados += itens.length;
+        resumo.coletados = coletados;
+        if (h.progresso) h.progresso({ pagina: pagina, coletados: coletados, count: count, teto: TETO });
+        if (!itens.length) break;
+        if (count !== null && coletados >= count) break;
+        if (itens.length < tam) break;
+        if (coletados >= TETO) { resumo.truncado = count === null || count > TETO; break; }
+        pagina++;
+        var perto = r.rest !== null && r.rest <= 1;
+        await esperar(perto ? cfg.limiteAltoMs : cfg.ritmoMs, h, perto ? 'Perto do limite de requisições da API. Aguardando um pouco' : '');
+      }
+      return resumo;
+    }
+
+    async function executar(consultas, h) {
+      h = h || {};
+      var res = { consultas: [], cancelado: false, erro: null };
+      for (var i = 0; i < consultas.length; i++) {
+        if (cancelado(h)) { res.cancelado = true; break; }
+        if (h.consulta) h.consulta(i, consultas.length, consultas[i].rotulo);
+        try {
+          res.consultas.push(await buscarConsulta(consultas[i], h));
+        } catch (e) {
+          if (e && e.tipo === 'cancelado') { res.cancelado = true; break; }
+          if (!e || !e.tipo) throw e;
+          res.consultas.push({ rotulo: consultas[i].rotulo, erro: e });
+          if (e.tipo === 'rede' || e.tipo === '429') { res.erro = e; break; }
+        }
+        if (i < consultas.length - 1) await esperar(cfg.ritmoMs, h, '');
+      }
+      return res;
+    }
+
+    /* Só conta quantas publicações cada consulta tem (uma chamada curta por consulta; não baixa os itens). */
+    async function contar(consultas, h) {
+      h = h || {};
+      var res = { contagens: [], cancelado: false, erro: null };
+      for (var i = 0; i < consultas.length; i++) {
+        if (cancelado(h)) { res.cancelado = true; break; }
+        if (h.consulta) h.consulta(i, consultas.length, consultas[i].rotulo);
+        try {
+          var url = montarUrl(cfg.base, consultas[i].params, 1, 5);
+          if (h.url) h.url(url);
+          var r = await pedir(url, h);
+          var d = r.dados, n = 0;
+          if (!r.vazio && h.amostra && d && Array.isArray(d.items)) h.amostra(d.items.map(normalizar));
+          if (!r.vazio) {
+            if (d && typeof d.count === 'number') n = d.count;
+            else n = d && Array.isArray(d.items) ? d.items.length : (Array.isArray(d) ? d.length : 0);
+          }
+          res.contagens.push({ rotulo: consultas[i].rotulo, count: n });
+          if (h.contagem) h.contagem(i, n, null);
+        } catch (e) {
+          if (e && e.tipo === 'cancelado') { res.cancelado = true; break; }
+          if (!e || !e.tipo) throw e;
+          res.contagens.push({ rotulo: consultas[i].rotulo, count: null, erro: e });
+          if (h.contagem) h.contagem(i, null, e);
+          if (e.tipo === 'rede' || e.tipo === '429') { res.erro = e; break; }
+        }
+        if (i < consultas.length - 1) await esperar(cfg.ritmoMs, h, '');
+      }
+      return res;
+    }
+
+    return { executar: executar, contar: contar, cfg: cfg };
+  }
+
+  var api = {
+    criar: criar, normalizar: normalizar, planejar: planejar, montarUrl: montarUrl,
+    lerProcessos: lerProcessos, lerLinhas: lerLinhas, agruparItens: agruparItens,
+    palavrasChave: palavrasChave, candidatos: candidatos, montarRelevancia: montarRelevancia,
+    prepararRelevancia: prepararRelevancia, pontuar: pontuar,
+    htmlParaTexto: htmlParaTexto, mascarar: mascarar, TAMANHO: TAMANHO, TETO: TETO, MAX_CONSULTAS: MAX_CONSULTAS
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.ComunicaAPI = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  /* cópia fiel desta página, usada pelo "plano B" (rodar a partir do endereço da API) */
+  var FONTE = '<!doctype html>' + document.documentElement.outerHTML;
+
+  var API_BASE = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao', API_ORIGEM = 'https://comunicaapi.pje.jus.br', SWAGGER = 'https://comunicaapi.pje.jus.br/swagger/index.html';
+  var C = window.Comunica, A = window.ComunicaAPI;
+  var $ = function (id) { return document.getElementById(id); };
+  var PASSO = 100;
+  var CHAVE_FORM = 'pub-tjma-api-form-v1';
+  var CHAVE_MODO = 'pub-tjma-modo-v1';
+  var NA_ORIGEM = false;
+  try { NA_ORIGEM = location.origin === API_ORIGEM; } catch (e) {}
+
+  var cliente = A.criar({ cfg: { base: API_BASE } });
+  var estado = {
+    itens: [], chaves: {}, versao: 0, buscando: false, cancelar: false, resolverConfirma: null,
+    urls: [], primeiroBruto: null, limite: null, mostrar: PASSO, termosBusca: [], nConsultas: 0, ultimoResumo: null,
+    cacheAgrupado: null, relev: null, relevId: 0, variacoes: null
+  };
+  var MAX_VARIACOES = 18, SUGERIR_ATE = 3000, LIM = { orcamento: 8000 };
+  var ROTULO_TIPO = { frase: 'frase', par: 'palavras vizinhas', palavra: 'palavra solta', relacionado: 'termo relacionado' };
+
+  /* ---------- utilidades ---------- */
+  function h(tag, cls, texto) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (texto !== undefined && texto !== null) e.textContent = texto;
+    return e;
+  }
+  function ler(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function isoLocal(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function plural(n, um, varios) { return n + ' ' + (n === 1 ? um : varios); }
+
+  var tmrStatus;
+  function dizer(msg, fixo) {
+    $('status').textContent = msg;
+    clearTimeout(tmrStatus);
+    if (!fixo) tmrStatus = setTimeout(function () { $('status').textContent = ''; }, 8000);
+  }
+
+  function copiar(texto, aviso) {
+    function falhou() {
+      $('manual').hidden = false;
+      var t = $('manual-t');
+      t.value = texto;
+      t.focus();
+      t.select();
+    }
+    $('manual').hidden = true;
+    try {
+      navigator.clipboard.writeText(texto).then(function () { dizer(aviso); }, falhou);
+    } catch (e) { falhou(); }
+  }
+
+  /* ---------- formulário ---------- */
+  var CAMPOS = ['termos', 'processos', 'parte', 'advogado', 'oab', 'uf', 'sigla', 'meio', 'periodo', 'ini', 'fim', 'orgao-busca'];
+  var periodoMexido = false;
+
+  function lerForm() {
+    var f = {};
+    CAMPOS.forEach(function (k) { f[k] = $(k).value; });
+    return f;
+  }
+  function salvarForm() {
+    var o = {};
+    CAMPOS.forEach(function (k) { o[k] = $(k).value; });
+    o.ampliar = $('ampliar').checked;
+    guardar(CHAVE_FORM, JSON.stringify(o));
+  }
+  function carregarForm() {
+    var s = ler(CHAVE_FORM);
+    if (!s) return;
+    try {
+      var o = JSON.parse(s);
+      CAMPOS.forEach(function (k) { if (typeof o[k] === 'string') $(k).value = o[k]; });
+      if (typeof o.ampliar === 'boolean') $('ampliar').checked = o.ampliar;
+      periodoMexido = true;
+    } catch (e) {}
+  }
+
+  function aplicarPeriodo(p) {
+    var hoje = new Date(), d0 = new Date(hoje), d1 = new Date(hoje);
+    if (p === 'todo') { $('ini').value = ''; $('fim').value = ''; return; }
+    if (p === 'ontem') { d0.setDate(hoje.getDate() - 1); d1 = new Date(d0); }
+    else if (p === '7') d0.setDate(hoje.getDate() - 6);
+    else if (p === '30') d0.setDate(hoje.getDate() - 29);
+    else if (p !== 'hoje') return;
+    $('ini').value = isoLocal(d0);
+    $('fim').value = isoLocal(d1);
+  }
+
+  /* ---------- órgãos: nome e código ---------- */
+  /* A API só filtra por órgão pelo código numérico, que vem em cada resultado (idOrgao). O arquivo aprende os pares nome/código
+     dos resultados que já viu e os guarda neste navegador; assim o nome de uma câmara ou vara vira um filtro da própria API. */
+  var CHAVE_IDS = 'pub-tjma-orgaoids-v1';
+  var orgaoIds = {};
+  try {
+    var oi = JSON.parse(ler(CHAVE_IDS) || '{}') || {};
+    Object.keys(oi).forEach(function (k) { if (/^\d+$/.test(String(oi[k]))) orgaoIds[k] = String(oi[k]); });
+  } catch (e) {}
+  function cmpPt(a, b) { return a.localeCompare(b, 'pt-BR'); }
+
+  function aprenderLista(lista) {
+    var novo = false;
+    lista.forEach(function (it) {
+      if (it && it.orgao && it.orgaoId && orgaoIds[it.orgao] !== it.orgaoId) { orgaoIds[it.orgao] = it.orgaoId; novo = true; }
+    });
+    if (novo) {
+      var nomes = Object.keys(orgaoIds);
+      if (nomes.length > 600) { var enxuto = {}; nomes.slice(-600).forEach(function (n) { enxuto[n] = orgaoIds[n]; }); orgaoIds = enxuto; }
+      guardar(CHAVE_IDS, JSON.stringify(orgaoIds));
+      atualizarListaOrgaosBusca();
+    }
+  }
+
+  function resolverOrgao(txt) {
+    txt = String(txt || '').trim();
+    if (!txt) return { vazio: true };
+    if (/^\d+$/.test(txt)) return { id: txt, nome: '' };
+    var n = C.semAcento(txt).toLowerCase(), nomes = Object.keys(orgaoIds);
+    var exato = nomes.filter(function (x) { return C.semAcento(x).toLowerCase() === n; });
+    if (exato.length === 1) return { id: orgaoIds[exato[0]], nome: exato[0] };
+    var parc = nomes.filter(function (x) { return C.semAcento(x).toLowerCase().indexOf(n) >= 0; });
+    if (parc.length === 1) return { id: orgaoIds[parc[0]], nome: parc[0] };
+    if (parc.length > 1) return { ambiguo: parc };
+    return { desconhecido: true };
+  }
+
+  var EXEMPLO_ORGAO = 'um processo da câmara ou da vara que você quer filtrar';
+  function atualizarDicaOrgao() {
+    var r = resolverOrgao($('orgao-busca').value), n = Object.keys(orgaoIds).length, t;
+    if (r.vazio) {
+      t = 'Limita a busca a um órgão, direto na API: com palavras comuns, evita baixar milhares de intimações de varas. ' +
+        (n ? 'Códigos já conhecidos: ' + n + ' órgãos (aparecem ao clicar no campo).' : 'Ainda não conheço o código de nenhum órgão: busque uma vez um processo do órgão (' + EXEMPLO_ORGAO + ') e ele passa a aparecer aqui.');
+    } else if (r.id) {
+      t = r.nome ? 'Vai buscar só em “' + r.nome + '” (código ' + r.id + ').' : 'Vai buscar só no órgão de código ' + r.id + '.';
+    } else if (r.ambiguo) {
+      t = 'Mais de um órgão combina: ' + r.ambiguo.slice(0, 4).join('; ') + (r.ambiguo.length > 4 ? '…' : '') + '. Escolha um da lista.';
+    } else {
+      t = 'Ainda não conheço o código deste órgão. Busque uma vez um processo dele (' + EXEMPLO_ORGAO + ') e ele passa a aparecer na lista, ou digite o código numérico.';
+    }
+    $('orgao-dica').textContent = t;
+  }
+  function atualizarListaOrgaosBusca() {
+    var dl = $('lista-orgaos-busca');
+    dl.textContent = '';
+    Object.keys(orgaoIds).sort(cmpPt).forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    atualizarDicaOrgao();
+  }
+
+  /* Formulário + código do órgão. Devolve { f, erro }. */
+  function formularioPronto() {
+    var f = lerForm(), r = resolverOrgao(f['orgao-busca']);
+    if (r.desconhecido) return { f: f, erro: 'Ainda não sei o código do órgão “' + f['orgao-busca'].trim() + '”. Busque uma vez um processo dele (' + EXEMPLO_ORGAO + ') para eu aprender o código, ou digite o código numérico no campo Órgão, ou deixe o campo vazio.' };
+    if (r.ambiguo) return { f: f, erro: 'Mais de um órgão combina com “' + f['orgao-busca'].trim() + '”: ' + r.ambiguo.slice(0, 4).join('; ') + '. Escolha um da lista.' };
+    f.orgaoId = r.id || '';
+    return { f: f, erro: '' };
+  }
+
+  /* ---------- mensagens ---------- */
+  function esconderMensagens() {
+    ['erro-busca', 'planob', 'confirma', 'manual', 'variacoes'].forEach(function (id) { $(id).hidden = true; });
+  }
+
+  function linkApi(url) {
+    var a = h('a', '', 'abrir esta consulta direto na API');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    return a;
+  }
+
+  function mostrarErro(msg, e) {
+    $('erro-txt').textContent = msg;
+    var t = $('erro-tec');
+    t.textContent = '';
+    if (e) {
+      if (e.status) t.appendChild(h('div', '', 'Código HTTP: ' + e.status));
+      if (e.causa) t.appendChild(h('div', '', 'Mensagem do navegador: ' + e.causa));
+      if (e.corpo) { var pre = h('pre', '', e.corpo); t.appendChild(pre); }
+      if (e.url) { var d = h('div'); d.appendChild(linkApi(e.url)); t.appendChild(d); }
+    }
+    $('erro-det').hidden = !t.childNodes.length;
+    $('erro-busca').hidden = false;
+  }
+
+  function mostrarPlanoB() {
+    if (NA_ORIGEM) return;
+    $('planob').hidden = false;
+  }
+
+  /* ---------- busca ---------- */
+  function zerar() {
+    estado.itens = []; estado.chaves = {}; estado.versao++; estado.primeiroBruto = null;
+    estado.mostrar = PASSO; estado.relev = null;
+  }
+
+  function atualizarAndamento(p) {
+    var prog = $('prog');
+    if (p.count) { prog.max = Math.min(p.count, p.teto); prog.value = Math.min(p.coletados, prog.max); }
+    else { prog.removeAttribute('value'); }
+  }
+
+  function minutosAprox(paginas) {
+    var s = paginas * 1.5;
+    return s < 60 ? 'menos de 1 minuto' : 'cerca de ' + Math.ceil(s / 60) + ' min';
+  }
+
+  function pedirConfirmacao(info) {
+    return new Promise(function (resolve) {
+      estado.resolverConfirma = resolve;
+      var txt, sim;
+      if (info.acimaDoTeto) {
+        txt = 'A busca “' + info.rotulo + '” tem ' + info.count.toLocaleString('pt-BR') + ' comunicações, mas a API entrega no máximo ' + A.TETO.toLocaleString('pt-BR') + ' por busca. Para ver todas, reduza o período (por exemplo, mês a mês). Baixar as primeiras ' + A.TETO.toLocaleString('pt-BR') + '?';
+        sim = 'Baixar as primeiras ' + A.TETO.toLocaleString('pt-BR');
+      } else {
+        txt = 'A busca “' + info.rotulo + '” tem ' + info.count.toLocaleString('pt-BR') + ' comunicações (' + plural(info.paginas, 'página', 'páginas') + ', ' + minutosAprox(info.paginas) + '). Baixar todas?';
+        sim = 'Baixar ' + info.count.toLocaleString('pt-BR');
+      }
+      $('confirma-txt').textContent = txt;
+      $('conf-sim').textContent = sim;
+      $('confirma').hidden = false;
+    });
+  }
+  function responderConfirmacao(sim) {
+    $('confirma').hidden = true;
+    var r = estado.resolverConfirma;
+    estado.resolverConfirma = null;
+    if (r) r(sim);
+  }
+
+  var tmrDesenho;
+  function agendarDesenho() {
+    if (tmrDesenho) return;
+    tmrDesenho = setTimeout(function () { tmrDesenho = null; atualizarSelects(); atualizar(); }, 120);
+  }
+
+  function resumoDaBusca(r) {
+    var ul = $('log');
+    ul.textContent = '';
+    r.consultas.forEach(function (c) {
+      var li = h('li');
+      li.appendChild(h('span', 'l-rot', c.rotulo));
+      if (c.erro) {
+        var s = h('span', 'l-mal', 'erro: ' + c.erro.message);
+        li.appendChild(s);
+        if (c.erro.url) li.appendChild(linkApi(c.erro.url));
+      } else if (c.recusado) {
+        li.appendChild(h('span', '', 'não baixada (' + c.count.toLocaleString('pt-BR') + ' comunicações)'));
+      } else if (!c.coletados) {
+        li.appendChild(h('span', '', c.vazioPor404 ? 'nenhuma comunicação (a API respondeu 404)' : 'nenhuma comunicação encontrada'));
+        if (/\S\s+\S/.test(c.rotulo.split(' · ')[0]) && !$('ampliar').checked && !estado.relev) {
+          li.appendChild(h('span', '', '· com várias palavras a API exige a frase inteira: marque “Ampliar a busca” para procurar as palavras separadas e termos relacionados.'));
+        }
+      } else {
+        var t = plural(c.coletados, 'comunicação', 'comunicações');
+        if (c.count && c.count > c.coletados) t += ' de ' + c.count.toLocaleString('pt-BR');
+        if (c.truncado) t += ' (a API entrega no máximo ' + A.TETO.toLocaleString('pt-BR') + '; reduza o período para ver o restante)';
+        li.appendChild(h('span', '', t));
+      }
+      ul.appendChild(li);
+    });
+    ul.hidden = !r.consultas.length;
+  }
+
+  async function buscar() {
+    if (estado.buscando) return;
+    esconderMensagens();
+    estado.variacoes = null;
+    $('log').hidden = true;
+    var pronto = formularioPronto(), f = pronto.f;
+    salvarForm();
+    if (pronto.erro) { mostrarErro(pronto.erro); return; }
+    var plano = A.planejar(f);
+    if (plano.erros.length) { mostrarErro(plano.erros.join(' ')); return; }
+    if ($('ampliar').checked && plano.termos.length) { await preverVariacoes(f, plano); return; }
+    await baixar(plano, null);
+  }
+
+  /* ampl = null (busca comum) ou { linhas: o que foi digitado, usados: variações marcadas } (busca ampliada) */
+  async function baixar(plano, ampl) {
+    if (!$('manter').checked) zerar();
+    var spec = ampl ? A.montarRelevancia(ampl.linhas, ampl.usados) : null;
+    if (ampl) {
+      /* só frases entre aspas: não há palavras para pontuar, então vale como busca comum */
+      estado.relev = spec.palavras.length ? { id: ++estado.relevId, spec: spec, prep: A.prepararRelevancia(spec), total: spec.palavras.length } : null;
+      estado.termosBusca = ampl.linhas;
+      $('destaque').value = destaqueAmpliado(spec);
+    } else {
+      estado.relev = null;
+      estado.termosBusca = plano.termos;
+      if (plano.termos.length) $('destaque').value = plano.termos.join('; ');
+    }
+    prepararBlocoRelev();
+    estado.nConsultas = plano.consultas.length;
+    estado.buscando = true; estado.cancelar = false; estado.urls = [];
+
+    $('buscar').disabled = true; $('cancelar').hidden = false;
+    $('andamento').hidden = false; $('espera').hidden = true;
+    $('prog').removeAttribute('value');
+    $('andamento-txt').textContent = 'Consultando a API…';
+    dizer(plano.avisos.join(' '), true);
+
+    var novos = 0, repetidos = 0, rotuloAtual = '', pos = '';
+    var ganchos = {
+      cancelado: function () { return estado.cancelar; },
+      url: function (u) { $('espera').hidden = true; estado.urls.push(u); },
+      limite: function (l) { estado.limite = l; },
+      consulta: function (i, n, rotulo) {
+        rotuloAtual = rotulo;
+        pos = n > 1 ? 'Consulta ' + (i + 1) + ' de ' + n + ' · ' : '';
+        $('andamento-txt').textContent = pos + '“' + rotulo + '”…';
+        $('prog').removeAttribute('value');
+      },
+      progresso: function (p) {
+        atualizarAndamento(p);
+        $('andamento-txt').textContent = pos + '“' + rotuloAtual + '” · ' + p.coletados.toLocaleString('pt-BR') +
+          (p.count ? ' de ' + Math.min(p.count, p.teto).toLocaleString('pt-BR') : '') + ' comunicações';
+      },
+      espera: function (seg, motivo) {
+        $('espera').hidden = false;
+        $('espera').textContent = motivo + ' (' + seg + ' s).';
+      },
+      aviso: function (m) { dizer(m, true); },
+      confirmar: ampl ? function () { return Promise.resolve(true); } : pedirConfirmacao,
+      itens: function (lista, raw, q) {
+        aprenderLista(lista);
+        if (raw && !estado.primeiroBruto) {
+          estado.primeiroBruto = Object.assign({}, raw);
+          if (typeof raw.texto === 'string' && raw.texto.length > 400) estado.primeiroBruto.texto = raw.texto.slice(0, 400) + '… (cortado aqui)';
+        }
+        lista.forEach(function (it) {
+          var ex = estado.chaves[it.chave];
+          if (ex) {
+            repetidos++;
+            if (ex.achadoPor.indexOf(q.rotulo) < 0) ex.achadoPor.push(q.rotulo);
+            return;
+          }
+          it.achadoPor = [q.rotulo];
+          estado.chaves[it.chave] = it;
+          estado.itens.push(it);
+          novos++;
+        });
+        estado.versao++;
+        agendarDesenho();
+      }
+    };
+
+    var r;
+    try { r = await cliente.executar(plano.consultas, ganchos); }
+    catch (e) { r = { consultas: [], erro: null, cancelado: false, inesperado: e }; }
+
+    estado.buscando = false;
+    $('buscar').disabled = false; $('cancelar').hidden = true;
+    $('andamento').hidden = true; $('espera').hidden = true;
+    estado.ultimoResumo = r;
+    resumoDaBusca(r);
+    clearTimeout(tmrDesenho); tmrDesenho = null;
+    atualizarSelects(); atualizar(); atualizarDiag();
+
+    var algumErro = r.consultas.some(function (c) { return c.erro; });
+    if (r.inesperado) {
+      mostrarErro('Algo inesperado aconteceu: ' + (r.inesperado.message || r.inesperado) + '. Os dados técnicos abaixo ajudam a investigar.', { causa: String(r.inesperado.stack || r.inesperado) });
+    } else if (r.erro && r.erro.tipo === 'rede') {
+      mostrarErro('Não consegui falar com a API do CNJ. Pode ser falta de internet, bloqueio de rede (comum em órgãos públicos) ou o navegador impedindo um arquivo local de consultar outro site. Tente o plano B abaixo.', r.erro);
+      mostrarPlanoB();
+    } else if (r.erro) {
+      mostrarErro(r.erro.message, r.erro);
+    } else if (algumErro) {
+      var primeiro = r.consultas.filter(function (c) { return c.erro; })[0].erro;
+      mostrarErro('Algumas consultas falharam: ' + primeiro.message + ' Veja o resumo abaixo do botão Buscar.', primeiro);
+    }
+
+    var m;
+    if (r.cancelado || estado.cancelar) m = 'Busca cancelada. ';
+    else if (r.erro || algumErro || r.inesperado) m = 'Busca interrompida. ';
+    else m = 'Busca concluída. ';
+    m += plural(novos, 'comunicação nova', 'comunicações novas') + ' na lista';
+    if (repetidos) m += ', ' + plural(repetidos, 'repetida ignorada', 'repetidas ignoradas');
+    dizer(m + '.', true);
+    if (novos && !r.erro) { var el = $('h-res'); if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'start' }); } catch (e) {} } }
+  }
+
+  /* ---------- busca ampliada ---------- */
+  function destaqueAmpliado(spec) {
+    var vistos = {}, saida = [];
+    spec.frases.concat(spec.palavras, spec.relacionados).forEach(function (t) {
+      var n = C.semAcento(t).toLowerCase();
+      if (t.length >= 2 && !vistos[n]) { vistos[n] = 1; saida.push(t); }
+    });
+    return saida.join('; ');
+  }
+
+  function prepararBlocoRelev() {
+    var r = estado.relev;
+    $('bloco-relev').hidden = !r;
+    if (!r) return;
+    var sel = $('f-min');
+    sel.textContent = '';
+    var o0 = h('option', '', 'Qualquer quantidade'); o0.value = '0'; sel.appendChild(o0);
+    for (var k = 2; k <= r.total; k++) {
+      var o = h('option', '', k === r.total ? 'Todas as ' + k + ' palavras' : k + ' ou mais das ' + r.total + ' palavras');
+      o.value = String(k); sel.appendChild(o);
+    }
+    sel.value = '0';
+    sel.parentNode.hidden = r.total < 2;
+    $('f-ordem').value = 'relevancia';
+  }
+
+  function relevanciaDe(it) {
+    var r = estado.relev;
+    if (!r) return null;
+    if (it._pv !== r.id) { it._p = A.pontuar(soTexto(it), baseEmenta(it), r.prep); it._pv = r.id; }
+    return it._p;
+  }
+
+  /* Marca primeiro as variações mais específicas (menos publicações) enquanto o total couber no orçamento; as muito grandes ficam
+     desmarcadas, mas continuam disponíveis para o usuário marcar. */
+  function marcarPadrao(itens) {
+    var soma = 0;
+    itens.forEach(function (x) { x.marcado = false; });
+    itens.filter(function (x) { return typeof x.count === 'number' && x.count > 0; })
+      .sort(function (a, b) { return a.count - b.count; })
+      .forEach(function (x) {
+        var n = Math.min(x.count, A.TETO);
+        if (soma + n <= LIM.orcamento) { x.marcado = true; soma += n; }
+      });
+  }
+
+  function resumoVariacoes() {
+    var v = estado.variacoes;
+    if (!v) return;
+    var marc = v.itens.filter(function (x) { return x.marcado; });
+    var soma = 0, paginas = 0, comResultado = 0;
+    v.itens.forEach(function (x) { if (x.count > 0) comResultado++; });
+    marc.forEach(function (x) { var n = Math.min(x.count || 0, A.TETO); soma += n; paginas += Math.ceil(n / 100); });
+    var txt;
+    if (v.contando) txt = '';
+    else if (!comResultado) txt = 'Nenhuma variação encontrou publicações neste período. Tente “Todo o período”, outro período ou outros termos.';
+    else if (!marc.length) txt = v.itens.every(function (x) { return !(x.count > 0) || x.count > LIM.orcamento; })
+      ? 'Nenhuma variação marcada: todas têm muitas publicações. Informe um órgão ou um período menor, ou marque as que quiser baixar assim mesmo.'
+      : 'Nenhuma variação marcada.';
+    else txt = plural(marc.length, 'variação marcada', 'variações marcadas') + ' · até ' + soma.toLocaleString('pt-BR') + ' publicações (' + minutosAprox(paginas) + ')';
+    $('var-resumo').textContent = txt;
+    $('var-baixar').disabled = v.contando || !marc.length;
+    $('var-add').disabled = v.contando;
+    $('var-novo').disabled = v.contando;
+  }
+
+  function desenharVariacoes() {
+    var v = estado.variacoes;
+    $('variacoes').hidden = !v;
+    if (!v) return;
+    $('var-sub').textContent = v.contando
+      ? 'Contando quantas publicações cada variação tem no período escolhido…'
+      : 'Marque o que deve ser baixado. A mesma publicação achada por mais de uma variação aparece uma vez só.' +
+        (v.cortou ? ' Para não pesar, mostrei só as primeiras ' + v.itens.length + ' variações.' : '') +
+        (!v.f.orgaoId && v.itens.some(function (x) { return x.count > SUGERIR_ATE; }) ? ' Algumas variações trazem milhares de publicações: informar o Órgão (campo da busca) ou um período menor deixa o resultado mais enxuto.' : '');
+    var ul = $('var-lista');
+    ul.textContent = '';
+    v.itens.forEach(function (it, i) {
+      var li = h('li');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.id = 'var-cb-' + i; cb.checked = !!it.marcado;
+      cb.disabled = !(typeof it.count === 'number' && it.count > 0);
+      cb.addEventListener('change', function () { it.marcado = cb.checked; resumoVariacoes(); });
+      li.appendChild(cb);
+      var lab = h('label', 'opcao');
+      lab.htmlFor = cb.id;
+      lab.appendChild(h('span', 'var-termo', it.termo));
+      lab.appendChild(h('span', 'var-tipo', ROTULO_TIPO[it.tipo] || it.tipo));
+      li.appendChild(lab);
+      var n = h('span', 'var-n');
+      var obs = '';
+      if (it.erro) { n.textContent = 'erro'; obs = it.erro.message; }
+      else if (typeof it.count !== 'number') n.textContent = v.contando ? 'contando…' : '—';
+      else if (it.count === 0) n.textContent = 'nenhuma';
+      else {
+        n.textContent = it.count.toLocaleString('pt-BR');
+        if (it.count > A.TETO) obs = 'A API entrega no máximo ' + A.TETO.toLocaleString('pt-BR') + ' por busca. Reduza o período para ver o restante.';
+        else if (it.count > SUGERIR_ATE) obs = (it.tipo === 'palavra' ? 'Palavra comum: traz muita coisa fora do tema. ' : 'Muitas publicações. ') + 'Informe um órgão ou um período menor para reduzir.';
+      }
+      li.appendChild(n);
+      if (obs) li.appendChild(h('span', 'var-obs', obs));
+      ul.appendChild(li);
+    });
+    resumoVariacoes();
+  }
+
+  function consultasDe(f, termo) { return A.planejar(Object.assign({}, f, { termos: termo })); }
+
+  function iniciarContagem() {
+    estado.buscando = true; estado.cancelar = false; estado.urls = [];
+    estado.variacoes.contando = true;
+    $('buscar').disabled = true; $('cancelar').hidden = false;
+    $('andamento').hidden = false; $('espera').hidden = true;
+    $('prog').removeAttribute('value');
+    $('andamento-txt').textContent = 'Contando as variações…';
+    desenharVariacoes();
+  }
+  function terminarContagem(r) {
+    var v = estado.variacoes;
+    estado.buscando = false;
+    $('buscar').disabled = false; $('cancelar').hidden = true;
+    $('andamento').hidden = true; $('espera').hidden = true;
+    if (!v) return;
+    v.contando = false;
+    desenharVariacoes();
+    atualizarDiag();
+    if (r && r.erro && r.erro.tipo === 'rede') {
+      mostrarErro('Não consegui falar com a API do CNJ. Pode ser falta de internet, bloqueio de rede (comum em órgãos públicos) ou o navegador impedindo um arquivo local de consultar outro site. Tente o plano B abaixo.', r.erro);
+      mostrarPlanoB();
+    } else if (r && r.erro) {
+      mostrarErro(r.erro.message, r.erro);
+    }
+    dizer(r && r.cancelado ? 'Contagem cancelada.' : 'Contagem concluída.', false);
+  }
+
+  async function contarVariacoes(alvos) {
+    var v = estado.variacoes, flat = [];
+    alvos.forEach(function (it) {
+      it.count = undefined; it.erro = null;
+      var p = consultasDe(v.f, it.termo);
+      if (p.erros.length) { it.erro = { message: p.erros.join(' ') }; return; }
+      p.consultas.forEach(function (q) { flat.push({ rotulo: q.rotulo, params: q.params, alvo: it }); });
+    });
+    var r;
+    try {
+      r = await cliente.contar(flat, {
+        cancelado: function () { return estado.cancelar; },
+        url: function (u) { $('espera').hidden = true; estado.urls.push(u); },
+        limite: function (l) { estado.limite = l; },
+        consulta: function (i, n, rotulo) {
+          $('prog').max = n; $('prog').value = i;
+          $('andamento-txt').textContent = 'Contando as variações (' + (i + 1) + ' de ' + n + '): “' + rotulo + '”…';
+        },
+        espera: function (seg, motivo) { $('espera').hidden = false; $('espera').textContent = motivo + ' (' + seg + ' s).'; },
+        aviso: function (m) { dizer(m, true); },
+        amostra: aprenderLista,
+        contagem: function (i, n, err) {
+          var alvo = flat[i].alvo;
+          if (err) alvo.erro = err;
+          else alvo.count = (alvo.count || 0) + n;
+          desenharVariacoes();
+        }
+      });
+    } catch (e) {
+      r = { erro: { tipo: 'inesperado', message: 'Algo inesperado aconteceu: ' + (e && e.message ? e.message : e) } };
+    }
+    return r;
+  }
+
+  async function preverVariacoes(f, plano) {
+    var c = A.candidatos(plano.termos, MAX_VARIACOES);
+    var itens = c.lista.map(function (x) { return { termo: x.termo, tipo: x.tipo, count: undefined, erro: null, marcado: false }; });
+    estado.variacoes = { f: f, linhas: plano.termos, itens: itens, cortou: c.cortou, contando: true };
+    dizer(plano.avisos.join(' '), true);
+    iniciarContagem();
+    var r = await contarVariacoes(itens);
+    marcarPadrao(itens);
+    terminarContagem(r);
+    var el = $('variacoes'); if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+  }
+
+  async function adicionarVariacao() {
+    var v = estado.variacoes;
+    if (!v || v.contando || estado.buscando) return;
+    var t = $('var-novo').value.replace(/\s+/g, ' ').trim();
+    if (t.length < 3) return;
+    var n = C.semAcento(t).toLowerCase();
+    if (v.itens.some(function (x) { return C.semAcento(x.termo).toLowerCase() === n; })) { dizer('Esse termo já está na lista.'); return; }
+    var it = { termo: t, tipo: 'relacionado', count: undefined, erro: null, marcado: false };
+    v.itens.push(it);
+    $('var-novo').value = '';
+    iniciarContagem();
+    var r = await contarVariacoes([it]);
+    var jaMarcado = 0;
+    v.itens.forEach(function (x) { if (x.marcado) jaMarcado += Math.min(x.count || 0, A.TETO); });
+    it.marcado = typeof it.count === 'number' && it.count > 0 && jaMarcado + Math.min(it.count, A.TETO) <= LIM.orcamento;
+    terminarContagem(r);
+  }
+
+  async function baixarMarcadas() {
+    var v = estado.variacoes;
+    if (!v || v.contando) return;
+    var marc = v.itens.filter(function (x) { return x.marcado; });
+    if (!marc.length) return;
+    var plano = A.planejar(Object.assign({}, v.f, { termos: marc.map(function (x) { return x.termo; }).join('\n') }));
+    if (plano.erros.length) { mostrarErro(plano.erros.join(' ')); return; }
+    var linhas = v.linhas;
+    estado.variacoes = null;
+    desenharVariacoes();
+    await baixar(plano, { linhas: linhas, usados: marc });
+  }
+
+  function fecharVariacoes() {
+    if (estado.variacoes && estado.variacoes.contando) { estado.cancelar = true; return; }
+    estado.variacoes = null;
+    desenharVariacoes();
+    dizer('Busca ampliada cancelada.');
+  }
+
+  function cancelarBusca() {
+    estado.cancelar = true;
+    if (estado.resolverConfirma) responderConfirmacao(false);
+    dizer('Cancelando…', true);
+  }
+
+  /* ---------- resultados ---------- */
+  function termosDestaque() {
+    var t = $('destaque').value.split(/[;\n]+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 2; });
+    $('filtro').value.split(/\s+/).forEach(function (w) { if (w.length >= 3) t.push(w); });
+    return t;
+  }
+
+  function realcar(el, texto, termos) {
+    texto = texto.normalize('NFC');
+    var base = C.semAcento(texto).toLowerCase(), marcas = [];
+    termos.forEach(function (t) {
+      t = C.semAcento(t).toLowerCase().trim();
+      if (t.length < 2) return;
+      var i = 0;
+      while ((i = base.indexOf(t, i)) >= 0) { marcas.push([i, i + t.length]); i += t.length; }
+    });
+    marcas.sort(function (a, b) { return a[0] - b[0]; });
+    var uniao = [], cur = null;
+    marcas.forEach(function (m) {
+      if (cur && m[0] <= cur[1]) cur[1] = Math.max(cur[1], m[1]);
+      else { cur = [m[0], m[1]]; uniao.push(cur); }
+    });
+    var pos = 0;
+    uniao.forEach(function (m) {
+      if (m[0] > pos) el.appendChild(document.createTextNode(texto.slice(pos, m[0])));
+      var mk = document.createElement('mark');
+      mk.textContent = texto.slice(m[0], m[1]);
+      el.appendChild(mk);
+      pos = m[1];
+    });
+    if (pos < texto.length) el.appendChild(document.createTextNode(texto.slice(pos)));
+  }
+
+  function textoBusca(it) {
+    if (!it._b) {
+      it._b = C.semAcento([it.processo, it.orgao, it.partes.join(' '), it.advogados.join(' '), it.ato, it.tipoDocumento, it.classe, it.relator, it.texto].join(' ')).toLowerCase();
+    }
+    return it._b;
+  }
+  function soTexto(it) {
+    if (it._t === undefined) it._t = C.semAcento(it.texto).toLowerCase();
+    return it._t;
+  }
+  /* ementa e "resto do texto" (sem a ementa), prontos para comparar sem acento e sem maiúsculas */
+  function baseEmenta(it) {
+    if (it._e === undefined) it._e = it.ementa ? C.semAcento(it.ementa.texto).toLowerCase() : '';
+    return it._e;
+  }
+  function baseResto(it) {
+    if (it._c === undefined) {
+      it._c = it.ementa ? C.semAcento(it.texto.slice(0, it.ementa.ini) + ' ' + it.texto.slice(it.ementa.fim)).toLowerCase() : soTexto(it);
+    }
+    return it._c;
+  }
+  /* Termos que o usuário quer ver no texto: os da caixa "Termos a marcar" (preenchida com a busca) ou, se vazia, os da busca. */
+  function termosAlvo() {
+    var t = $('destaque').value.split(/[;\n]+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 2; });
+    if (!t.length) t = estado.termosBusca.filter(function (x) { return x.length >= 2; });
+    return t.map(function (x) { return C.semAcento(x).toLowerCase(); });
+  }
+  function ondeTermo(it, alvo) {
+    return {
+      ementa: !!it.ementa && alvo.some(function (a) { return baseEmenta(it).indexOf(a) >= 0; }),
+      resto: alvo.some(function (a) { return baseResto(it).indexOf(a) >= 0; })
+    };
+  }
+
+  function baseAgrupada() {
+    var c = estado.cacheAgrupado;
+    var agrupar = $('agrupar').checked;
+    if (!c || c.versao !== estado.versao || c.agrupar !== agrupar) {
+      var lista = agrupar ? A.agruparItens(estado.itens) : estado.itens.slice();
+      lista.sort(function (a, b) { return (b.dataIso || '').localeCompare(a.dataIso || ''); });
+      c = estado.cacheAgrupado = { versao: estado.versao, agrupar: agrupar, lista: lista };
+    }
+    return c.lista;
+  }
+
+  function rotuloAto(it) { return it.ato || '(não identificado)'; }
+
+  function visao() {
+    var base = baseAgrupada();
+    var palavras = C.semAcento($('filtro').value).toLowerCase().split(/\s+/).filter(Boolean);
+    var fo = C.semAcento($('f-orgao').value).toLowerCase().trim(), fa = $('f-ato').value;
+    var onde = $('f-onde').value, alvo = onde === 'tudo' ? [] : termosAlvo();
+    var minimo = estado.relev ? (parseInt($('f-min').value, 10) || 0) : 0;
+    var lista = base.filter(function (it) {
+      if (fo && C.semAcento(it.orgao).toLowerCase().indexOf(fo) < 0) return false;
+      if (fa && rotuloAto(it) !== fa) return false;
+      if (minimo && relevanciaDe(it).achadas < minimo) return false;
+      if (alvo.length) {
+        var o = ondeTermo(it, alvo);
+        if (onde === 'ementa' && !o.ementa) return false;
+        if (onde === 'fora' && (o.ementa || !o.resto)) return false;
+      }
+      var b = textoBusca(it);
+      for (var i = 0; i < palavras.length; i++) if (b.indexOf(palavras[i]) < 0) return false;
+      return true;
+    });
+    if (estado.relev && $('f-ordem').value === 'relevancia') {
+      lista.sort(function (a, b) {
+        return (relevanciaDe(b).pontos - relevanciaDe(a).pontos) || (b.dataIso || '').localeCompare(a.dataIso || '');
+      });
+    }
+    return { base: base, lista: lista };
+  }
+
+  function popular(sel, valores, rotuloTodos) {
+    var atual = sel.value;
+    sel.textContent = '';
+    var o = h('option', '', rotuloTodos); o.value = ''; sel.appendChild(o);
+    valores.forEach(function (v) { var x = h('option', '', v); x.value = v; sel.appendChild(x); });
+    sel.value = valores.indexOf(atual) >= 0 ? atual : '';
+  }
+
+  /* A API não oferece a lista de órgãos: as sugestões vêm dos que já apareceram em buscas (lembrados neste navegador). */
+  var CHAVE_ORGAOS = 'pub-tjma-orgaos-v1';
+  var orgaosConhecidos = {};
+  try { (JSON.parse(ler(CHAVE_ORGAOS) || '[]') || []).forEach(function (o) { if (typeof o === 'string') orgaosConhecidos[o] = 1; }); } catch (e) {}
+
+  function atualizarSelects() {
+    var atos = {}, novoOrgao = false;
+    estado.itens.forEach(function (it) {
+      if (it.orgao && !orgaosConhecidos[it.orgao]) { orgaosConhecidos[it.orgao] = 1; novoOrgao = true; }
+      atos[rotuloAto(it)] = 1;
+    });
+    var cmp = function (a, b) { return a.localeCompare(b, 'pt-BR'); };
+    var nomes = Object.keys(orgaosConhecidos).sort(cmp);
+    if (novoOrgao) guardar(CHAVE_ORGAOS, JSON.stringify(nomes.slice(0, 400)));
+    var dl = $('lista-orgaos');
+    dl.textContent = '';
+    nomes.forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    popular($('f-ato'), Object.keys(atos).sort(cmp), 'Todos os atos');
+  }
+
+  function registro(it, termos) {
+    var li = h('li', 'reg');
+    var topo = h('div', 'reg-topo');
+    topo.appendChild(h('span', 'proc', it.processo || '(sem número)'));
+    if (it.processo) {
+      var b = h('button', 'mini', 'Copiar nº'); b.type = 'button';
+      b.setAttribute('aria-label', 'Copiar o número do processo ' + it.processo);
+      b.addEventListener('click', function () { copiar(it.processo, 'Número copiado.'); });
+      topo.appendChild(b);
+    }
+    if (it.link) {
+      var a = h('a', 'btn mini', 'Inteiro teor');
+      a.href = it.link; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      topo.appendChild(a);
+    }
+    topo.appendChild(h('span', 'data', it.data));
+    li.appendChild(topo);
+    li.appendChild(h('div', 'orgao', it.orgao || 'Órgão não informado'));
+
+    var chips = h('div', 'chips');
+    var rv = relevanciaDe(it);
+    if (rv) {
+      var tr0 = rv.achadas + ' de ' + rv.total + ' palavras do tema';
+      if (rv.naEmenta) tr0 += ' (' + rv.naEmenta + ' na ementa)';
+      chips.appendChild(h('span', 'chip', tr0));
+      if (rv.frase) chips.appendChild(h('span', 'chip', 'palavras juntas'));
+      if (rv.relacionadas) chips.appendChild(h('span', 'chip vazado', plural(rv.relacionadas, 'termo relacionado', 'termos relacionados')));
+    }
+    if (it.ato) chips.appendChild(h('span', 'chip', it.ato));
+    var tdoc = (it.tipoDocumento || '').replace(/\s*\(expediente\)\s*$/i, '').toLowerCase();
+    if (tdoc && tdoc !== (it.ato || '').toLowerCase() && tdoc !== (it.tipo || '').toLowerCase()) chips.appendChild(h('span', 'chip vazado', it.tipoDocumento));
+    if (it.classe) chips.appendChild(h('span', 'chip vazado', it.classe));
+    if (it.relator) chips.appendChild(h('span', '', 'Relator: ' + it.relator));
+    if (it.tipo) chips.appendChild(h('span', '', it.tipo));
+    if (it.comunicacoes > 1) chips.appendChild(h('span', 'chip vazado', it.comunicacoes + ' destinatários'));
+    if (estado.nConsultas > 1 && it.achadoPor.length) {
+      var ap = it.achadoPor.length > 3 ? it.achadoPor.slice(0, 3).join('; ') + '… (+' + (it.achadoPor.length - 3) + ')' : it.achadoPor.join('; ');
+      chips.appendChild(h('span', 'chip vazado', 'busca: ' + ap));
+    }
+    if (it.ementa && !rv) {
+      var alvo = termosAlvo();
+      if (alvo.length) {
+        var o = ondeTermo(it, alvo);
+        if (o.ementa) chips.appendChild(h('span', 'chip', o.resto ? 'termo na ementa e no texto' : 'termo só na ementa'));
+        else if (o.resto) chips.appendChild(h('span', 'chip vazado', 'termo só fora da ementa'));
+      }
+    }
+    if (chips.childNodes.length) li.appendChild(chips);
+
+    if (it.partes.length) {
+      var p1 = h('div', 'par'); p1.appendChild(h('div', 'rotulo', it.partes.length > 1 ? 'Partes' : 'Parte'));
+      p1.appendChild(h('div', '', it.partes.join('; '))); li.appendChild(p1);
+    }
+    if (it.advogados.length) {
+      var p2 = h('div', 'par'); p2.appendChild(h('div', 'rotulo', 'Advogados'));
+      p2.appendChild(h('div', '', it.advogados.join('; '))); li.appendChild(p2);
+    }
+
+    if (it.ementa) {
+      li.appendChild(painelComEmenta(it, termos));
+      return li;
+    }
+
+    var tr = C.trecho(it.texto, termos, 140);
+    var p = h('p', 'trecho');
+    realcar(p, tr.texto, termos);
+    li.appendChild(p);
+
+    if (it.texto.length > tr.texto.length) {
+      var d = document.createElement('details');
+      d.appendChild(h('summary', '', 'Ver texto completo (' + it.texto.length.toLocaleString('pt-BR') + ' caracteres)'));
+      var corpo = h('div', 'inteiro');
+      d.appendChild(corpo);
+      d.addEventListener('toggle', function () {
+        if (d.open && !corpo.firstChild) realcar(corpo, it.texto, termosDestaque());
+      });
+      li.appendChild(d);
+    }
+    return li;
+  }
+
+  function rotuloInteiro(it) { return /ac[óo]rd[ãa]o/i.test(it.ato || it.tipoDocumento || '') ? 'Acórdão completo' : 'Texto completo'; }
+
+  function blocoEmenta(it, termos) {
+    var box = h('div', 'ementa');
+    it.ementa.secoes.forEach(function (s, i) {
+      if (s.titulo) box.appendChild(h('div', 'em-tit', s.titulo));
+      var p = h('p', 'em-p' + (!s.titulo && i === 0 ? ' chave' : ''));
+      realcar(p, s.texto, termos);
+      box.appendChild(p);
+    });
+    if (!it.ementa.completa) {
+      box.appendChild(h('p', 'dica', 'Não consegui identificar onde a ementa termina: o trecho acima pode estar incompleto ou ter texto a mais. Confira em “' + rotuloInteiro(it) + '”.'));
+    }
+    return box;
+  }
+
+  /* Acórdão com ementa: o usuário alterna entre ementa, trecho em volta do termo e texto completo. A vista inicial vem da caixa "Mostrar em cada resultado". */
+  function painelComEmenta(it, termos) {
+    var painel = h('div', 'painel');
+    var barra = h('div', 'vistas');
+    barra.setAttribute('role', 'group');
+    barra.setAttribute('aria-label', 'O que mostrar neste resultado');
+    var area = h('div', 'vista-area');
+    var defs = [
+      ['ementa', 'Ementa'],
+      ['trecho', 'Trecho do termo'],
+      ['inteiro', rotuloInteiro(it) + ' (' + it.texto.length.toLocaleString('pt-BR') + ' caracteres)']
+    ];
+    var botoes = {};
+
+    function mostrar(qual) {
+      var t = termosDestaque();
+      defs.forEach(function (d) { botoes[d[0]].setAttribute('aria-pressed', d[0] === qual ? 'true' : 'false'); });
+      area.textContent = '';
+      if (qual === 'ementa') {
+        area.appendChild(blocoEmenta(it, t));
+      } else if (qual === 'trecho') {
+        var tr = C.trecho(it.texto, t, 140);
+        var p = h('p', 'trecho');
+        realcar(p, tr.texto, t);
+        area.appendChild(p);
+      } else {
+        var corpo = h('div', 'inteiro');
+        realcar(corpo, it.texto, t);
+        area.appendChild(corpo);
+        var mk = corpo.querySelector('mark');
+        if (mk) corpo.scrollTop = Math.max(0, mk.offsetTop - 40);
+      }
+    }
+
+    defs.forEach(function (d) {
+      var b = h('button', '', d[1]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { mostrar(d[0]); });
+      botoes[d[0]] = b;
+      barra.appendChild(b);
+    });
+    var cp = h('button', 'espaco', 'Copiar ementa');
+    cp.type = 'button';
+    cp.setAttribute('aria-label', 'Copiar a ementa do processo ' + it.processo);
+    cp.addEventListener('click', function () { copiar(C.ementaParaCopiar(it.ementa), 'Ementa copiada.'); });
+    barra.appendChild(cp);
+
+    painel.appendChild(barra);
+    painel.appendChild(area);
+    mostrar($('f-modo').value === 'trecho' ? 'trecho' : 'ementa');
+    return painel;
+  }
+
+  function filtrosAtivos() {
+    var a = [], sel = function (id) { var o = $(id).selectedOptions && $(id).selectedOptions[0]; return o ? o.textContent : ''; };
+    if ($('filtro').value.trim()) a.push('Filtrar na lista “' + $('filtro').value.trim() + '”');
+    if ($('f-orgao').value.trim()) a.push('Órgão “' + $('f-orgao').value.trim() + '”');
+    if ($('f-ato').value) a.push('Ato “' + $('f-ato').value + '”');
+    if ($('f-onde').value !== 'tudo') a.push('Onde o termo aparece: ' + sel('f-onde'));
+    if (estado.relev && $('f-min').value !== '0') a.push('Palavras do tema: ' + sel('f-min'));
+    return a;
+  }
+  function limparFiltros() {
+    $('filtro').value = ''; $('f-orgao').value = ''; $('f-ato').value = ''; $('f-onde').value = 'tudo'; $('f-min').value = '0';
+    estado.mostrar = PASSO;
+    atualizar();
+  }
+  function mostrarVazioFiltros(box, v) {
+    box.textContent = '';
+    var ativos = filtrosAtivos();
+    box.appendChild(h('p', '', 'A lista tem ' + plural(v.base.length, 'registro', 'registros') + ', mas nenhum combina com os filtros ativos' + (ativos.length ? ': ' + ativos.join('; ') + '.' : '.')));
+    if ($('f-orgao').value.trim()) {
+      var cont = {};
+      v.base.forEach(function (it) { var o = it.orgao || 'órgão não informado'; cont[o] = (cont[o] || 0) + 1; });
+      var nomes = Object.keys(cont).sort(function (a, b) { return cont[b] - cont[a]; });
+      box.appendChild(h('p', '', 'Os registros baixados são destes órgãos: ' + nomes.slice(0, 5).map(function (o) { return o + ' (' + cont[o] + ')'; }).join('; ') + (nomes.length > 5 ? '…' : '') + '.'));
+    }
+    var b = h('button', 'mini', 'Limpar filtros');
+    b.type = 'button';
+    b.addEventListener('click', limparFiltros);
+    box.appendChild(b);
+  }
+
+  function atualizar() {
+    var v = visao(), termos = termosDestaque();
+    var ol = $('regs');
+    ol.textContent = '';
+    var total = estado.itens.length;
+    var vazio = $('vazio');
+
+    if (!total) {
+      vazio.hidden = false;
+      vazio.textContent = 'Nenhum resultado ainda. Preencha a busca acima e clique em Buscar.';
+    } else if (!v.lista.length) {
+      vazio.hidden = false;
+      mostrarVazioFiltros(vazio, v);
+    } else {
+      vazio.hidden = true;
+    }
+
+    v.lista.slice(0, estado.mostrar).forEach(function (it) { ol.appendChild(registro(it, termos)); });
+
+    var mais = $('mais');
+    if (v.lista.length > estado.mostrar) {
+      mais.hidden = false;
+      mais.textContent = 'Mostrar mais ' + Math.min(PASSO, v.lista.length - estado.mostrar) + ' (' + (v.lista.length - estado.mostrar).toLocaleString('pt-BR') + ' restantes)';
+    } else {
+      mais.hidden = true;
+    }
+
+    var procs = {}, coms = 0;
+    v.lista.forEach(function (it) { procs[it.processo] = 1; coms += it.comunicacoes || 1; });
+    var nProc = Object.keys(procs).length;
+    var txt = total
+      ? plural(nProc, 'processo', 'processos') + ' · ' + plural(coms, 'comunicação', 'comunicações')
+      : 'Nenhuma comunicação na lista';
+    if (total && v.lista.length < v.base.length) txt += ' (filtro ativo, de ' + v.base.length.toLocaleString('pt-BR') + ' registros)';
+    var buscados = estado.termosBusca.filter(function (t) { return t.length >= 2; });
+    if (total && buscados.length) {
+      var alvo = buscados.map(function (t) { return C.semAcento(t).toLowerCase(); });
+      var exatos = 0, naEmenta = 0, haEmenta = false;
+      v.lista.forEach(function (it) {
+        var t = soTexto(it);
+        if (alvo.some(function (a) { return t.indexOf(a) >= 0; })) exatos += it.comunicacoes || 1;
+        if (it.ementa) {
+          haEmenta = true;
+          var e = baseEmenta(it);
+          if (alvo.some(function (a) { return e.indexOf(a) >= 0; })) naEmenta += it.comunicacoes || 1;
+        }
+      });
+      txt += ' · ' + exatos.toLocaleString('pt-BR') + ' com o termo exato no texto';
+      if (haEmenta) txt += ' (' + naEmenta.toLocaleString('pt-BR') + ' na ementa)';
+    }
+    if (total && estado.relev) {
+      var todas = 0;
+      v.lista.forEach(function (it) { var rr = relevanciaDe(it); if (rr.total && rr.achadas === rr.total) todas += it.comunicacoes || 1; });
+      txt += ' · ' + todas.toLocaleString('pt-BR') + ' com todas as ' + estado.relev.total + ' palavras do tema';
+    }
+    $('bloco-relev').hidden = !estado.relev;
+    $('resumo').textContent = txt;
+    ['copiar-tabela', 'copiar-nums', 'baixar-csv'].forEach(function (id) { $(id).disabled = !v.lista.length; });
+    $('limpar').disabled = !total;
+  }
+
+  /* ---------- planilha ---------- */
+  var CABECALHO = ['Processo', 'Órgão', 'Data de disponibilização', 'Tipo de comunicação', 'Tipo de documento', 'Ato (detectado)', 'Classe', 'Relator (detectado)', 'Partes', 'Advogados', 'Inteiro teor (link)', 'Ementa', 'Termo na ementa', 'Trecho'];
+  function linhasPlanilha(lista, termos) {
+    var rel = estado.relev, alvo = termosAlvo();
+    var linhas = [rel ? CABECALHO.concat(['Palavras do tema encontradas', 'Pontos de relevância']) : CABECALHO];
+    lista.forEach(function (it) {
+      var naEmenta = it.ementa && alvo.length ? (ondeTermo(it, alvo).ementa ? 'sim' : 'não') : '';
+      var linha = [it.processo, it.orgao, it.data, it.tipo, it.tipoDocumento, it.ato, it.classe, it.relator,
+        it.partes.join('; '), it.advogados.join('; '), it.link, it.ementa ? it.ementa.texto : '', naEmenta,
+        C.trecho(it.texto, termos, 140).texto];
+      if (rel) { var rv = relevanciaDe(it); linha.push(rv.achadas + ' de ' + rv.total, String(rv.pontos).replace('.', ',')); }
+      linhas.push(linha);
+    });
+    return linhas;
+  }
+  function plano(s) { return String(s === undefined || s === null ? '' : s).replace(/\s+/g, ' ').trim(); }
+
+  function copiarTabela() {
+    var v = visao();
+    var linhas = linhasPlanilha(v.lista, termosDestaque());
+    copiar(linhas.map(function (l) { return l.map(plano).join('\t'); }).join('\n'), v.lista.length + ' linhas copiadas. Cole numa planilha.');
+  }
+
+  function baixarCsv() {
+    var v = visao();
+    if (!v.lista.length) return;
+    var linhas = linhasPlanilha(v.lista, termosDestaque());
+    var csv = '﻿' + linhas.map(function (l) {
+      return l.map(function (c) { return '"' + plano(c).replace(/"/g, '""') + '"'; }).join(';');
+    }).join('\r\n');
+    var url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = 'publicacoes-tjma-' + isoLocal(new Date()) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    dizer('Arquivo CSV gerado (' + v.lista.length + ' linhas). Abre direto no Excel.');
+  }
+
+  function copiarNumeros() {
+    var v = visao(), vistos = {}, nums = [];
+    v.lista.forEach(function (it) { if (it.processo && !vistos[it.processo]) { vistos[it.processo] = 1; nums.push(it.processo); } });
+    copiar(nums.join('\n'), plural(nums.length, 'número copiado.', 'números copiados.'));
+  }
+
+  /* ---------- dados técnicos ---------- */
+  function atualizarDiag() {
+    var d = $('diag-corpo');
+    d.textContent = '';
+    d.appendChild(h('div', '', 'Endereço consultado: ' + API_BASE));
+    if (estado.limite && (estado.limite.limite !== null || estado.limite.restantes !== null)) {
+      d.appendChild(h('div', '', 'Limite de requisições informado pela API: ' + (estado.limite.limite === null ? '?' : estado.limite.limite) + ' por janela; restantes na última resposta: ' + (estado.limite.restantes === null ? '?' : estado.limite.restantes) + '.'));
+    }
+    if (estado.urls.length) {
+      d.appendChild(h('div', '', 'Chamadas feitas nesta busca: ' + estado.urls.length + '. As últimas:'));
+      var ul = h('ul');
+      estado.urls.slice(-5).forEach(function (u) {
+        var li = h('li'); var a = h('a', '', u); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; li.appendChild(a); ul.appendChild(li);
+      });
+      d.appendChild(ul);
+    }
+    if (estado.primeiroBruto) {
+      d.appendChild(h('div', '', 'Primeiro resultado como a API entregou (se algum campo aparecer errado na lista, este é o dado de origem):'));
+      var pre = h('pre', '', JSON.stringify(estado.primeiroBruto, null, 2));
+      d.appendChild(pre);
+      var b = h('button', 'mini', 'Copiar dados brutos'); b.type = 'button';
+      b.addEventListener('click', function () { copiar(JSON.stringify(estado.primeiroBruto, null, 2), 'Dados copiados.'); });
+      d.appendChild(b);
+    }
+    if (!d.childNodes.length) d.appendChild(h('div', '', 'Ainda não há busca.'));
+  }
+
+  /* ---------- plano B ---------- */
+  function scriptPlanoB() {
+    return '(function(){var h=' + JSON.stringify(FONTE) + ';document.open();document.write(h);document.close();})();';
+  }
+
+  /* ---------- eventos ---------- */
+  /* O botão é "button" e o Enter é tratado aqui: uma prévia em quadro isolado (sandbox sem allow-forms) bloqueia o envio de formulário em silêncio. */
+  $('form').addEventListener('submit', function (e) { e.preventDefault(); });
+  $('buscar').addEventListener('click', buscar);
+  ['sigla', 'parte', 'advogado', 'oab', 'uf'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); buscar(); } });
+  });
+  ['termos', 'processos'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); buscar(); } });
+  });
+  $('cancelar').addEventListener('click', cancelarBusca);
+  $('ampliar').addEventListener('change', salvarForm);
+  $('orgao-busca').addEventListener('input', atualizarDicaOrgao);
+  $('orgao-busca').addEventListener('change', salvarForm);
+  $('orgao-busca').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); buscar(); } });
+  $('var-baixar').addEventListener('click', baixarMarcadas);
+  $('var-cancelar').addEventListener('click', fecharVariacoes);
+  $('var-add').addEventListener('click', adicionarVariacao);
+  $('var-novo').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); adicionarVariacao(); } });
+  $('conf-sim').addEventListener('click', function () { responderConfirmacao(true); });
+  $('conf-nao').addEventListener('click', function () { estado.cancelar = true; responderConfirmacao(false); });
+
+  $('periodo').addEventListener('change', function () { periodoMexido = true; aplicarPeriodo($('periodo').value); salvarForm(); });
+  ['ini', 'fim'].forEach(function (id) {
+    $(id).addEventListener('input', function () { periodoMexido = true; $('periodo').value = 'custom'; salvarForm(); });
+  });
+  $('processos').addEventListener('input', function () {
+    if (!periodoMexido && $('processos').value.trim()) { $('periodo').value = 'todo'; aplicarPeriodo('todo'); }
+  });
+
+  $('limpar').addEventListener('click', function () {
+    zerar(); $('filtro').value = ''; $('f-orgao').value = ''; $('destaque').value = ''; $('f-onde').value = 'tudo'; estado.termosBusca = []; estado.nConsultas = 0;
+    prepararBlocoRelev();
+    $('log').hidden = true;
+    atualizarSelects(); atualizar(); atualizarDiag();
+    dizer('Lista limpa.');
+  });
+  $('mais').addEventListener('click', function () { estado.mostrar += PASSO; atualizar(); });
+  ['filtro', 'destaque', 'f-orgao'].forEach(function (id) { $(id).addEventListener('input', function () { estado.mostrar = PASSO; atualizar(); }); });
+  ['f-ato', 'agrupar', 'f-onde', 'f-ordem', 'f-min'].forEach(function (id) { $(id).addEventListener('change', function () { estado.mostrar = PASSO; atualizar(); }); });
+  $('f-modo').addEventListener('change', function () { guardar(CHAVE_MODO, $('f-modo').value); atualizar(); });
+  $('copiar-tabela').addEventListener('click', copiarTabela);
+  $('baixar-csv').addEventListener('click', baixarCsv);
+  $('copiar-nums').addEventListener('click', copiarNumeros);
+  $('copiar-planob').addEventListener('click', function () { copiar(scriptPlanoB(), 'Script copiado. Cole no console da página da API.'); });
+
+  /* ---------- início ---------- */
+  carregarForm();
+  if (ler(CHAVE_MODO) === 'trecho') $('f-modo').value = 'trecho';
+  var p0 = $('periodo').value;
+  if (p0 === 'hoje' || p0 === 'ontem' || p0 === '7' || p0 === '30') aplicarPeriodo(p0);
+  else if (!$('periodo').value) { $('periodo').value = '7'; aplicarPeriodo('7'); }
+  if ($('parte').value || $('advogado').value || $('oab').value) $('mais-filtros').open = true;
+  var a = $('swagger-link'); a.href = SWAGGER; a.textContent = SWAGGER;
+  $('selo-origem').hidden = !NA_ORIGEM;
+  try { $('aviso-previa').hidden = window.self === window.top; } catch (e) { $('aviso-previa').hidden = false; }
+  atualizarListaOrgaosBusca();
+  atualizarSelects(); atualizar(); atualizarDiag();
+
+  window.__publicacoes = { cfg: cliente.cfg, lim: LIM, orgaoIds: function () { return orgaoIds; }, estado: estado, visao: visao, relevanciaDe: relevanciaDe, buscar: buscar, scriptPlanoB: scriptPlanoB, fonteTamanho: FONTE.length };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex">
+<title>Ferramentas de consulta</title>
+<style>
+:root {
+  --bg: #f1f4f8; --surface: #ffffff; --ink: #132033; --ink-2: #4a5b70; --line: #d3dae3; --line-strong: #aeb9c7;
+  --accent: #1b4e8d; --accent-soft: #e2ecf8; --focus: #1b4e8d;
+  --f-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
+    --accent: #86b4ee; --accent-soft: #1d3250; --focus: #86b4ee; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
+  --accent: #86b4ee; --accent-soft: #1d3250; --focus: #86b4ee; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-block: 40px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; }
+p { margin: 0; }
+.lead { color: var(--ink-2); max-width: 62ch; }
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.cartao {
+  display: block; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  border-radius: 4px; padding: 16px 18px; color: inherit; text-decoration: none;
+}
+.cartao:hover { border-color: var(--line-strong); border-left-color: var(--accent); background: var(--accent-soft); }
+.cartao:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.cartao h2 { margin: 0 0 4px; font-size: 18px; color: var(--accent); }
+.cartao p { color: var(--ink-2); }
+.rodape { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--ink-2); max-width: 80ch; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Ferramentas de consulta</h1>
+    <p class="lead">Páginas simples que funcionam direto no navegador, sem cadastro e sem instalar nada. Cada uma consulta uma fonte pública e guarda as suas buscas apenas no seu próprio navegador.</p>
+  </header>
+  <ul class="lista">
+    <li>
+      <a class="cartao" href="djen/">
+        <h2>Consulta DJEN</h2>
+        <p>Busca publicações do Diário de Justiça Eletrônico Nacional (acórdãos, decisões, despachos e intimações) na API pública de comunicações do CNJ. Filtra por tribunal, órgão, período e tipo de ato, separa a ementa e exporta para CSV.</p>
+      </a>
+    </li>
+  </ul>
+  <p class="rodape">Ferramentas independentes e não oficiais. Não pertencem ao CNJ, a tribunais ou a qualquer órgão público, e não substituem a consulta às fontes oficiais.</p>
+</main>
+</body>
+</html>
