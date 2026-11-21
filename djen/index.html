@@ -1320,7 +1320,10 @@ details > summary { cursor: pointer; font-size: 14px; font-weight: 500; color: v
   /* A API só filtra por órgão pelo código numérico, que vem em cada resultado (idOrgao). O arquivo aprende os pares nome/código
      dos resultados que já viu e os guarda neste navegador; assim o nome de uma câmara ou vara vira um filtro da própria API. */
   var CHAVE_IDS = 'pub-tjma-orgaoids-v1';
+  /* Códigos já conferidos na API do CNJ; o que o navegador aprender depois sobrescreve esta lista. */
+  var SEMENTE_ORGAOS = { 'Quinta Câmara de Direito Privado': '43923' };
   var orgaoIds = {};
+  Object.keys(SEMENTE_ORGAOS).forEach(function (k) { orgaoIds[k] = SEMENTE_ORGAOS[k]; });
   try {
     var oi = JSON.parse(ler(CHAVE_IDS) || '{}') || {};
     Object.keys(oi).forEach(function (k) { if (/^\d+$/.test(String(oi[k]))) orgaoIds[k] = String(oi[k]); });
