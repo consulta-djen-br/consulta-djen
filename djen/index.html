@@ -581,6 +581,241 @@ code { font-family: var(--font-mono); font-size: .92em; }
     return em.secoes.map(function (s) { return s.titulo ? s.titulo + '\n' + s.texto : s.texto; }).join('\n\n');
   }
 
+  /* ---------- referência no formato do Jusbrasil ----------
+     Saída: "(TJ-MA - Apelação Cível: 08024298120258100128 MA 0802429-81.2025.8.10.0128, Relator.: Desembargadora MARIA ..., Data de Julgamento: 15/09/2026,
+     SEGUNDA CÂMARA DE DIREITO PRIVADO, Data de Publicação: DJe 25/11/2026)".
+     O órgão e a classe vêm dos campos da API; o relator e a data do julgamento são lidos do começo e do fecho do texto
+     (a API não tem campo para eles); a publicação é o primeiro dia útil depois da disponibilização. O que não for achado fica de fora. */
+  var MESES = { janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6, julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
+  var S_MES = '(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)';
+  var RE_FAIXA = new RegExp('(\\d{1,2})(?:\\s+de\\s+' + S_MES + ')?(?:\\s+de\\s+\\d{4})?\\s+a\\s+(\\d{1,2})\\s+de\\s+' + S_MES + '\\s+de\\s+(\\d{4})', 'i');
+  var UF_POR_TR = ['', 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SE', 'SP', 'TO'];
+
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function dataValida(d, m, a) {
+    d = +d; m = +m; a = +a;
+    if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12 && a >= 2000 && a <= 2100)) return '';
+    return p2(d) + '/' + p2(m) + '/' + a;
+  }
+  function mesNum(nome) { return MESES[semAcento(String(nome).toLowerCase())] || 0; }
+
+  /* Data em que o colegiado julgou. Em sessão virtual, vale o último dia do período. O fecho do voto e o cabeçalho trazem a data do
+     próprio acórdão; no meio ele cita outros julgados, com as datas deles, então só frases específicas valem fora dessas duas pontas.
+     Cada câmara do TJMA usa um modelo: "realizada em", "com início em ... e término em ...", "iniciada em ... e finalizada em ...",
+     "Sessão Virtual de 10 a 17 de novembro de 2026", "12.11.2026 A 19.11.2026". Devolve dd/mm/aaaa ou '' (alguns acórdãos só dizem "data do sistema"). */
+  function dataJulgamento(texto) {
+    texto = String(texto || '').replace(/\s+/g, ' ');
+    var ini = texto.slice(0, 1500), fim = texto.slice(-1800), m, v;
+    var S_DATA = '(\\d{1,2}\\/\\d{1,2}\\/\\d{4}|\\d{1,2}\\s+de\\s+' + S_MES + '(?:\\s+de\\s+\\d{4})?)';
+    function dataExata(s) { var x = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s); return x ? dataValida(x[1], x[2], x[3]) : ''; }
+    function dataPorExtenso(s, anoPadrao) {
+      var x = new RegExp('(\\d{1,2})\\s+de\\s+' + S_MES + '(?:\\s+de\\s+(\\d{4}))?', 'i').exec(s);
+      return x ? dataValida(x[1], mesNum(x[2]), x[3] || anoPadrao) : '';
+    }
+    function qualquerData(s, anoPadrao) { return dataExata(s) || dataPorExtenso(s, anoPadrao); }
+    function fimDaFaixa(s) {
+      var x = RE_FAIXA.exec(s);
+      if (x) return dataValida(x[3], mesNum(x[4]), x[5]);
+      x = /(\d{1,2})(?:[./](\d{1,2}))?(?:[./]\d{2,4})?\s*(?:a|at[ée]|à)\s*(\d{1,2})[./](\d{1,2})[./](\d{4})/i.exec(s);
+      return x ? dataValida(x[3], x[4], x[5]) : '';
+    }
+    function ultimo(re, s) { var r = null, x; re.lastIndex = 0; while ((x = re.exec(s))) { r = x; if (x.index === re.lastIndex) re.lastIndex++; } return r; }
+    var anoFim = (/(\d{4})\D*$/.exec(fim.slice(-600)) || [])[1];
+
+    if ((m = ultimo(new RegExp('(?:realizada|ocorrida)\\s+em\\s+' + S_DATA, 'gi'), fim)) && (v = qualquerData(m[1], anoFim))) return v;
+    if ((m = ultimo(new RegExp('t[ée]rmino\\s+em\\s+' + S_DATA, 'gi'), fim) || new RegExp('t[ée]rmino\\s+em\\s+' + S_DATA, 'i').exec(texto)) && (v = qualquerData(m[1], anoFim))) return v;
+    if ((m = /finalizad[ao]\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(ini) || /finalizad[ao]\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(texto)) && (v = dataExata(m[1]))) return v;
+    if ((m = ultimo(/per[ií]odo\s+de\s+(.{4,90})/gi, fim)) && (v = fimDaFaixa(m[1]))) return v;
+    if ((m = /Sess[ãa]o.{0,160}/i.exec(ini)) && (v = fimDaFaixa(m[0]))) return v;
+    if ((m = ultimo(/Sess[ãa]o\s+Virtual.{0,160}/gi, fim)) && (v = fimDaFaixa(m[0]))) return v;
+    if ((m = ultimo(/\bfim\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/gi, fim)) && (v = dataExata(m[1]))) return v;
+    var par = /AC[ÓO]RD[ÃA]O\s+Vistos.{0,1200}/.exec(texto);
+    if (par) {
+      par = par[0];
+      if ((m = new RegExp('(?:realizada|ocorrida|t[ée]rmino)\\s+em\\s+' + S_DATA, 'i').exec(par)) && (v = qualquerData(m[1], anoFim))) return v;
+      if ((m = /per[ií]odo\s+de\s+(.{4,90})/i.exec(par)) && (v = fimDaFaixa(m[1]))) return v;
+      if ((v = fimDaFaixa(par))) return v;
+    }
+    if ((v = fimDaFaixa(fim.slice(-500)))) return v;
+    if ((m = new RegExp('S[ãa]o\\s+Lu[ií]s(?:\\s*(?:\\/\\s*MA|\\(MA\\)))?\\s*,\\s*(?:no\\s+dia\\s+)?(\\d{1,2}\\s+de\\s+' + S_MES + '\\s+de\\s+\\d{4})', 'i').exec(fim.slice(-400))) && (v = dataPorExtenso(m[1]))) return v;
+    m = new RegExp('Sala\\s+d[ae]s?\\s+Sess[õo]es.{0,260}?(\\d{1,2})\\s+de\\s+' + S_MES + '\\s+de\\s+(\\d{4})', 'i').exec(fim);
+    if (m && (v = dataValida(m[1], mesNum(m[2]), m[3]))) return v;
+    if ((m = /Data d[oe] Julgamento\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(ini)) && (v = dataExata(m[1]))) return v;
+    return '';
+  }
+
+  /* Letras maiúsculas e minúsculas valem igual nos títulos ("Desembargador", "DESEMBARGADOR"); os nomes seguem sensíveis à caixa. */
+  function ci(s) { return s.replace(/[a-zà-ú]/gi, function (c) { var l = c.toLowerCase(), u = c.toUpperCase(); return l === u ? c : '[' + l + u + ']'; }); }
+  var SUBST = '(?:' + ci('substitut') + '[oOaA]|' + ci('subst') + '\\.)';
+  var DES = '(?:' + ci('desembargador') + '[aA]?|' + ci('des') + '\\.(?:ª|º)?)';
+  var RE_TITULO = '(?:(?:' + SUBST + '\\s+)?' + DES + '(?:\\s+' + SUBST + ')?|' + ci('ministr') + '[oOaA]|' +
+    ci('ju') + '[iíIÍ][zZ][aA]?(?:\\s+' + ci('de') + '\\s+' + ci('direito') + ')?(?:\\s+' + ci('convocad') + '[oOaA])?)';
+  var RE_NOME = "[A-ZÀ-Ú][A-Za-zÀ-ÿ'-]*(?:\\s+(?:d[aeo]s?|e|[A-ZÀ-Ú][A-Za-zÀ-ÿ'-]*)){1,9}";
+  var RE_NOME_LIVRE = "[A-Za-zÀ-ÿ'][A-Za-zÀ-ÿ'-]*(?:\\s+(?:d[aeo]s?|e|[A-Za-zÀ-ÿ'][A-Za-zÀ-ÿ'-]*)){1,9}";
+  var RELATOR = ci('relator') + '([aA])?(?:\\s+' + ci('substitut') + '[oOaA])?';
+  var PARA_AC = '(\\s+(?:' + ci('para') + '|[pP]\\/)\\s*(?:' + ci('o') + '\\s+)?' + ci('ac') + '[óoÓO]' + ci('rd') + '[ãaÃA]' + ci('o') + ')';
+
+  function formatarRelator(titulo, nome, feminino) {
+    var t = String(titulo || '').replace(/\s+/g, ' ').trim(), r = '';
+    var fem = !!feminino || /(?:desembargador|ministr|ju[ií]z)a\b/i.test(t);
+    if (/des/i.test(t) && !/ministr|ju[ií]z/i.test(t)) {
+      r = fem ? 'Desembargadora' : 'Desembargador';
+      if (/subst/i.test(t)) r += fem ? ' Substituta' : ' Substituto';
+    } else if (t) {
+      r = t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+      r = r.replace(/\bde direito\b/i, 'de Direito').replace(/\bconvocad/i, 'Convocad');
+    }
+    var n = String(nome).replace(/\s+/g, ' ').trim().toUpperCase();
+    return (r ? r + ' ' : '') + n;
+  }
+
+  /* "Des. NOME" não diz se é Desembargador ou Desembargadora. Procura o mesmo nome com o título por extenso no texto;
+     se não houver, vale o primeiro nome (termina em "a" = feminino). */
+  function feminino(texto, nome) {
+    var tn = semAcento(String(texto)).toLowerCase().replace(/\s+/g, ' ');
+    var ws = semAcento(String(nome)).toLowerCase().split(/\s+/).slice(0, 2).join('\\s+');
+    var all = new RegExp('(desembargadora|ministra|des\\.ª)\\s+' + ws).test(tn);
+    if (all) return true;
+    if (new RegExp('(desembargador|ministro)\\s+' + ws).test(tn)) return false;
+    var p = semAcento(String(nome)).toLowerCase().split(/\s+/)[0];
+    return /a$/.test(p) && !/^(luca|joshua|elias|jonas)$/.test(p);
+  }
+
+  /* Relator (e relator para o acórdão, quando houver). A assinatura no fim do voto é a fonte mais segura; o cabeçalho serve de reserva.
+     A assinatura vem em duas formas: "Desembargador NOME Relator" e "NOME Desembargador Relator para acórdão".
+     No cabeçalho, "RELATOR ORIGINÁRIO:" e "RELATOR PARA O ACÓRDÃO:" aparecem juntos quando houve divergência vencedora. */
+  /* A assinatura às vezes abrevia o nome ("RICARDO DUAILIBE"); a lista de participantes traz o completo: "Ricardo Tadeu Bugarin Duailibe (Relator)". */
+  function nomeCompleto(texto, curto) {
+    var ws = String(curto).trim().split(/\s+/);
+    if (ws.length < 2) return curto;
+    var tn = semAcento(String(texto).normalize('NFC'));
+    function esc(w) { return semAcento(w).replace(/[.*+?^$\{}()|[\]\\]/g, '\\$&'); }
+    var re = new RegExp(esc(ws[0]) + "(?:\\s+[A-Za-zÀ-ÿ'-]+){0,8}?\\s+" + esc(ws[ws.length - 1]) + '\\s*\\((?:Presidente\\s+e\\s+)?Relator(?:a)?\\)', 'i');
+    var m = re.exec(tn);
+    if (!m) return curto;
+    var cheio = String(texto).normalize('NFC').slice(m.index, m.index + m[0].length).replace(/\s*\(.*$/, '').replace(/\s+/g, ' ').trim();
+    return cheio.length > String(curto).length ? cheio : curto;
+  }
+  function relatorDoAcordao(texto) {
+    texto = String(texto || '').replace(/\s+/g, ' ');
+    var fim = texto.slice(-700), ini = texto.slice(0, 1500), m, sig = null;
+    function fmt(titulo, nome, fem) {
+      nome = String(nome).replace(/(?:\s+(?:Presidente|Vice-Presidente|e))+$/i, '');
+      nome = nomeCompleto(texto, nome);
+      var t = String(titulo || '');
+      if (!fem && /^(?:subst\S*\s+)?des\.?$/i.test(t.trim())) fem = feminino(texto, nome);
+      return formatarRelator(t, nome, fem);
+    }
+    function guardar(idx, titulo, nome, fem, para) { if (!sig || idx >= sig.idx) sig = { idx: idx, titulo: titulo, nome: nome, fem: fem, para: para }; }
+    var reA = new RegExp('(' + RE_TITULO + ')\\s+(' + RE_NOME + ')\\.?\\s+' + RELATOR + PARA_AC + '?\\b(?!\\s*:)', 'g');
+    while ((m = reA.exec(fim))) guardar(m.index, m[1], m[2], !!m[3], !!m[4]);
+    var reB = new RegExp('(?:^|[.:;]\\s+)(' + RE_NOME + ')\\s+(' + RE_TITULO + ')\\s+' + RELATOR + PARA_AC + '?\\b(?!\\s*:)', 'g');
+    while ((m = reB.exec(fim))) guardar(m.index, m[2], m[1], !!m[3], !!m[4]);
+    function doCabecalho(rotulo) {
+      var h = new RegExp(rotulo + '\\s*:\\s*(?:(' + RE_TITULO + ')\\s+)?(' + RE_NOME_LIVRE + ')', 'i').exec(ini);
+      if (!h) return '';
+      var nome = limparNomeCabecalho(h[2]);
+      return nome ? fmt(h[1], nome, false) : '';
+    }
+    var paraHead = doCabecalho(ci('relator') + '[aA]?' + PARA_AC.replace(/^\(/, '(?:'));
+    var origHead = doCabecalho(ci('relator') + '[aA]?\\s+' + ci('origin') + '[áaÁA]' + ci('ri') + '[oOaA]');
+    var relHead = doCabecalho(ci('relator') + '[aA]?');
+    var assinatura = sig ? fmt(sig.titulo, sig.nome, sig.fem) : '';
+    var res = { relator: '', paraAcordao: '' };
+    if (sig && sig.para) { res.paraAcordao = assinatura; res.relator = origHead || relHead; }
+    else if (paraHead) { res.paraAcordao = paraHead; res.relator = origHead || relHead || assinatura; }
+    else res.relator = assinatura || origHead || relHead || gabineteDe(ini);
+    return res;
+  }
+  /* Última reserva: "GABINETE DO DESEMBARGADOR NOME" no topo do texto. */
+  function gabineteDe(ini) {
+    var g = new RegExp('GABINETE\\s+D([OA])\\s+(DES(?:EMBARGADOR(?:A)?)?\\.?|MINISTR[OA])\\s+((?:[A-ZÀ-Ú\'-]+\\s+(?:D[AEO]S?\\s+|E\\s+)?){1,8}[A-ZÀ-Ú\'-]+)').exec(ini);
+    if (!g) return '';
+    var nome = g[3].split(/\s+(?:AGRAVO|APELA[ÇC][ÃA]O|EMBARGOS|HABEAS|MANDADO|A[ÇC][ÃA]O|CONFLITO|REMESSA|RECURSO|PROCEDIMENTO|RECLAMA[ÇC][ÃA]O|N[º°]|PROCESSO)\b/)[0];
+    var fem = g[1] === 'A';
+    var titulo = /^MINISTR/.test(g[2]) ? (fem ? 'Ministra' : 'Ministro') : (fem ? 'Desembargadora' : 'Desembargador');
+    return formatarRelator(titulo, nome, fem);
+  }
+  /* No cabeçalho o nome vem colado nos rótulos seguintes ("... Relator para acórdão: ..."): corta antes do primeiro rótulo. */
+  function limparNomeCabecalho(s) {
+    return String(s).split(/\s+(?:Relator|Relatora|Origin[áa]ri[oa]|Revisor|Revisora|[ÓO]rg[ãa]o|Apelante|Agravante|Apelado|Agravado|Embargante|Embargado|Recorrente|Recorrido|Impetrante|Impetrado|Paciente|Autor|Requerente|Requerido|Exequente|Executado|Interessado|Origem|Processo|Comarca|Classe|Parte|Polo|Advogado|Vara|Ementa|Data)\b/i)[0].trim();
+  }
+
+  /* Primeiro dia útil depois da disponibilização no DJEN (a publicação se considera feita no dia útil seguinte).
+     Pula sábado, domingo, feriados nacionais fixos e Sexta-feira Santa; feriado local pode deslocar um dia. */
+  function pascoa(ano) {
+    var a = ano % 19, b = Math.floor(ano / 100), c = ano % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25),
+      g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4,
+      l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(Date.UTC(ano, mes - 1, dia));
+  }
+  var FERIADOS_FIXOS = { '01-01': 1, '04-21': 1, '05-01': 1, '09-07': 1, '10-12': 1, '11-02': 1, '11-15': 1, '11-20': 1, '12-25': 1 };
+  function ehDiaUtil(d) {
+    var dow = d.getUTCDay();
+    if (dow === 0 || dow === 6) return false;
+    if (FERIADOS_FIXOS[p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate())]) return false;
+    var sexta = pascoa(d.getUTCFullYear()); sexta.setUTCDate(sexta.getUTCDate() - 2);
+    return d.getTime() !== sexta.getTime();
+  }
+  function dataPublicacao(iso) {
+    var x = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    if (!x) return '';
+    var d = new Date(Date.UTC(+x[1], +x[2] - 1, +x[3]));
+    do { d.setUTCDate(d.getUTCDate() + 1); } while (!ehDiaUtil(d));
+    return p2(d.getUTCDate()) + '/' + p2(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
+  }
+
+  function nomeDoTribunal(sigla, processo) {
+    var s = String(sigla || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), m;
+    if (!s) {
+      var c = /^\d{7}-?\d{2}\.?\d{4}\.?(\d)\.?(\d{2})/.exec(String(processo || ''));
+      if (c && c[1] === '8' && UF_POR_TR[+c[2]]) s = 'TJ' + UF_POR_TR[+c[2]];
+    }
+    if ((m = /^TJ([A-Z]{2})$/.exec(s))) return { nome: 'TJ-' + m[1], uf: m[1] };
+    if ((m = /^(TRF|TRT)(\d{1,2})$/.exec(s))) return { nome: m[1] + '-' + m[2], uf: '' };
+    if ((m = /^TRE([A-Z]{2})$/.exec(s))) return { nome: 'TRE-' + m[1], uf: m[1] };
+    return { nome: s, uf: '' };
+  }
+
+  /* A API manda a classe em caixa alta ("APELAÇÃO CÍVEL"); na referência ela vai como no Jusbrasil ("Apelação Cível"). */
+  function classeLegivel(c) {
+    c = String(c || '').replace(/\s+/g, ' ').trim();
+    if (!c) return 'Processo';
+    if (c !== c.toUpperCase()) return c;
+    var peq = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, em: 1, no: 1, na: 1, nos: 1, nas: 1, a: 1, o: 1, com: 1, para: 1, por: 1, ao: 1, 'c/c': 1 };
+    return c.toLowerCase().split(' ').map(function (w, i) { return (i > 0 && peq[w]) ? w : w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+  }
+
+  /* it: item já normalizado (processo, classe, orgao, dataIso, siglaTribunal, texto). Devolve { texto, faltou: [...] }. */
+  function referenciaJurisprudencial(it) {
+    var faltou = [], partes = [];
+    var trib = nomeDoTribunal(it.siglaTribunal, it.processo);
+    var numero = String(it.processo || '').replace(/\D+/g, '');
+    var cab = (trib.nome ? trib.nome + ' - ' : '') + classeLegivel(it.classe) + ': ' + [numero, trib.uf, it.processo].filter(Boolean).join(' ');
+    partes.push(cab);
+    var rel = relatorDoAcordao(it.texto);
+    if (rel.relator || rel.paraAcordao) {
+      var r = [];
+      if (rel.relator) r.push('Relator.: ' + rel.relator);
+      if (rel.paraAcordao) r.push('Relator p/ Acórdão: ' + rel.paraAcordao);
+      partes.push(r.join(', '));
+    } else faltou.push('o relator');
+    var dj = dataJulgamento(it.texto);
+    if (dj) partes.push('Data de Julgamento: ' + dj); else faltou.push('a data do julgamento');
+    if (it.orgao) partes.push(it.orgao.toUpperCase());
+    var dp = dataPublicacao(it.dataIso);
+    if (dp) partes.push('Data de Publicação: DJe ' + dp);
+    return { texto: '(' + partes.join(', ') + ')', faltou: faltou };
+  }
+
+  /* Ementa em um parágrafo só, como no Jusbrasil, e a referência numa linha abaixo. */
+  function ementaComReferencia(it) {
+    var corpo = it.ementa ? it.ementa.texto : '';
+    var ref = referenciaJurisprudencial(it);
+    return { texto: corpo + '\n\n' + ref.texto, faltou: ref.faltou };
+  }
+
   /* Trecho em volta do primeiro termo encontrado (sem diferenciar maiúsculas e acentos). */
   function trecho(texto, termos, raio) {
     raio = raio || 130;
@@ -688,7 +923,9 @@ code { font-family: var(--font-mono); font-size: .92em; }
   var api = {
     parse: parse, agrupar: agrupar, trecho: trecho, semAcento: semAcento,
     assinatura: assinatura, detectarAto: detectarAto, detectarRelator: detectarRelator, detectarClasse: detectarClasse,
-    extrairEmenta: extrairEmenta, ementaParaCopiar: ementaParaCopiar
+    extrairEmenta: extrairEmenta, ementaParaCopiar: ementaParaCopiar,
+    ementaComReferencia: ementaComReferencia, referenciaJurisprudencial: referenciaJurisprudencial,
+    dataJulgamento: dataJulgamento, relatorDoAcordao: relatorDoAcordao, dataPublicacao: dataPublicacao
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Comunica = api;
@@ -910,6 +1147,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       numeroComunicacao: raw.numeroComunicacao !== undefined ? raw.numeroComunicacao : null,
       processo: processo,
       orgao: String(raw.nomeOrgao || '').trim(),
+      siglaTribunal: String(raw.siglaTribunal || '').trim(),
       orgaoId: raw.idOrgao !== undefined && raw.idOrgao !== null && /^\d+$/.test(String(raw.idOrgao)) ? String(raw.idOrgao) : '',
       dataIso: iso,
       data: brData(iso) || String(raw.datadisponibilizacao || raw.data_disponibilizacao || ''),
@@ -2174,7 +2412,13 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var cp = h('button', 'espaco', 'Copiar ementa');
     cp.type = 'button';
     cp.setAttribute('aria-label', 'Copiar a ementa do processo ' + it.processo);
-    cp.addEventListener('click', function () { copiar(C.ementaParaCopiar(it.ementa), 'Ementa copiada.'); });
+    cp.addEventListener('click', function () {
+      // ementa em um parágrafo, linha em branco e a referência no estilo do Jusbrasil
+      var r = C.ementaComReferencia(it);
+      copiar(r.texto, r.faltou.length
+        ? 'Ementa copiada. Não achei ' + r.faltou.join(' nem ') + ' no texto; confira a referência.'
+        : 'Ementa copiada com a referência.');
+    });
     barra.appendChild(cp);
 
     painel.appendChild(barra);
