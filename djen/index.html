@@ -782,7 +782,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
   function classeLegivel(c) {
     c = String(c || '').replace(/\s+/g, ' ').trim();
     if (!c) return 'Processo';
-    if (c !== c.toUpperCase()) return c;
+    var letras = c.match(/\p{L}/gu) || [];
+    if (letras.filter(function (x) { return x !== x.toLowerCase(); }).length / letras.length < 0.6) return c;
     var peq = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, em: 1, no: 1, na: 1, nos: 1, nas: 1, a: 1, o: 1, com: 1, para: 1, por: 1, ao: 1, 'c/c': 1 };
     return c.toLowerCase().split(' ').map(function (w, i) { return (i > 0 && peq[w]) ? w : w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
@@ -802,7 +803,10 @@ code { font-family: var(--font-mono); font-size: .92em; }
       partes.push(r.join(', '));
     } else faltou.push('o relator');
     // sentença e decisão de primeiro grau não têm julgamento colegiado: sem relator, qualquer data achada no texto seria chute
-    var dj = (rel.relator || rel.paraAcordao) ? dataJulgamento(it.texto) : '';
+    // só acórdão/ementa tem sessão de julgamento no texto; decisão monocrática costuma dizer só "data do sistema"
+    // e os julgados que ela cita trazem outras datas
+    var colegiado = /ac[óo]rd[ãa]o|^ementa/i.test(it.tipoDocumento || '') || (!it.tipoDocumento && /AC[ÓO]RD[ÃA]O\s+Vistos/.test(it.texto || ''));
+    var dj = (colegiado && (rel.relator || rel.paraAcordao)) ? dataJulgamento(it.texto) : '';
     if (dj) partes.push('Data de Julgamento: ' + dj); else faltou.push('a data do julgamento');
     if (it.orgao) partes.push(it.orgao.toUpperCase());
     var dp = dataPublicacao(it.dataIso);
