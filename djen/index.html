@@ -623,8 +623,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var anoFim = (/(\d{4})\D*$/.exec(fim.slice(-600)) || [])[1];
 
     if ((m = ultimo(new RegExp('(?:realizada|ocorrida)\\s+em\\s+' + S_DATA, 'gi'), fim)) && (v = qualquerData(m[1], anoFim))) return v;
-    if ((m = ultimo(new RegExp('t[ée]rmino\\s+em\\s+' + S_DATA, 'gi'), fim) || new RegExp('t[ée]rmino\\s+em\\s+' + S_DATA, 'i').exec(texto)) && (v = qualquerData(m[1], anoFim))) return v;
-    if ((m = /finalizad[ao]\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(ini) || /finalizad[ao]\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(texto)) && (v = dataExata(m[1]))) return v;
+    if ((m = ultimo(new RegExp('t[ée]rmino\\s+em\\s+' + S_DATA, 'gi'), fim)) && (v = qualquerData(m[1], anoFim))) return v;
+    if ((m = /finalizad[ao]\s+em\s+(\d{1,2}\/\d{1,2}\/\d{4})/i.exec(ini)) && (v = dataExata(m[1]))) return v;
     if ((m = ultimo(/per[ií]odo\s+de\s+(.{4,90})/gi, fim)) && (v = fimDaFaixa(m[1]))) return v;
     if ((m = /Sess[ãa]o.{0,160}/i.exec(ini)) && (v = fimDaFaixa(m[0]))) return v;
     if ((m = ultimo(/Sess[ãa]o\s+Virtual.{0,160}/gi, fim)) && (v = fimDaFaixa(m[0]))) return v;
@@ -801,7 +801,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
       if (rel.paraAcordao) r.push('Relator p/ Acórdão: ' + rel.paraAcordao);
       partes.push(r.join(', '));
     } else faltou.push('o relator');
-    var dj = dataJulgamento(it.texto);
+    // sentença e decisão de primeiro grau não têm julgamento colegiado: sem relator, qualquer data achada no texto seria chute
+    var dj = (rel.relator || rel.paraAcordao) ? dataJulgamento(it.texto) : '';
     if (dj) partes.push('Data de Julgamento: ' + dj); else faltou.push('a data do julgamento');
     if (it.orgao) partes.push(it.orgao.toUpperCase());
     var dp = dataPublicacao(it.dataIso);
