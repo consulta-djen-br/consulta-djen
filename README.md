@@ -5,7 +5,15 @@
 - `index.html`: página inicial, com a apresentação e o botão para a consulta.
 - `djen/index.html`: a ferramenta de busca de publicações na API pública de comunicações do CNJ
   (`https://comunicaapi.pje.jus.br/api/v1/comunicacao`). É um único arquivo; roda no navegador do usuário.
+- `fonts/`: as três famílias do visual, em arquivos `.woff2`, cada uma com o texto da sua licença (SIL Open Font License 1.1):
+  Besley (títulos), Atkinson Hyperlegible Next (texto) e Atkinson Hyperlegible Mono (números de processo, datas).
 - `.nojekyll`: faz o GitHub Pages servir os arquivos como estão.
+
+## Visual
+
+A identidade vem do azulejo de São Luís: cobalto sobre louça, o número do processo numa placa de rua em cerâmica e o marca-texto rosa só no termo encontrado.
+Há dois temas, claro (Louça) e escuro (Noite), escolhidos pela preferência do sistema. Todo o CSS fica dentro de cada página, com as cores como variáveis (`--cobalto`, `--louca`, `--tinta` e as demais) no começo do bloco `<style>`.
+Se as fontes não carregarem (por exemplo, ao abrir `djen/index.html` direto do computador ou rodá-lo pela página da API, o "plano B"), valem as fontes do sistema e tudo continua funcionando.
 
 ## Publicar e atualizar
 
@@ -14,5 +22,5 @@ As preferências de cada pessoa ficam no navegador dela (localStorage), então u
 
 ## Observações
 
-- A página só faz pedidos ao CNJ (a política de segurança do arquivo limita isso). Nada do que é digitado é enviado a este site.
+- A página só faz pedidos ao CNJ (a política de segurança do arquivo limita isso; as fontes só podem vir deste mesmo site). Nada do que é digitado é enviado a este site.
 - Ferramenta independente e não oficial; não pertence ao CNJ nem a qualquer tribunal.

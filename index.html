@@ -3,96 +3,108 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f1f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1022" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Indagatio: busca de publicações judiciais no Diário de Justiça Eletrônico Nacional, direto da fonte.">
 <title>Indagatio</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231b4e8d'/%3E%3Crect x='7' y='8' width='18' height='3.4' rx='1.7' fill='%23fff'/%3E%3Crect x='7' y='14.3' width='13' height='3.4' rx='1.7' fill='%23ffd95c'/%3E%3Crect x='7' y='20.6' width='16' height='3.4' rx='1.7' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fbfcf9'/%3E%3Crect width='32' height='16' fill='%231c3fb0'/%3E%3Cpath d='M0 16A16 16 0 0 0 32 16L24 16A8 8 0 0 1 8 16Z' fill='%231c3fb0'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/Besley-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/AtkinsonNext-wght.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Indagatio. Identidade: azulejo de São Luís, cobalto sobre louça. Fontes (licença OFL) servidas deste mesmo site, na pasta fonts/. */
+@font-face { font-family: "Besley"; src: url("fonts/Besley-wght.woff2") format("woff2"); font-weight: 400 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("fonts/AtkinsonNext-wght.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("fonts/AtkinsonNext-wght-italic.woff2") format("woff2"); font-weight: 200 800; font-style: italic; font-display: swap; }
 :root {
-  --bg: #f1f4f8; --surface: #ffffff; --ink: #132033; --ink-2: #4a5b70; --line: #d3dae3; --line-strong: #aeb9c7;
-  --accent: #1b4e8d; --accent-ink: #ffffff; --accent-soft: #e2ecf8; --mark: #ffd95c; --mark-bg: #ffe27d; --focus: #1b4e8d;
-  --f-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --f-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --louca: #f1f3ee; --folha: #fbfcf9; --papel: #e6e9e1;
+  --tinta: #101a36; --tinta-2: #46516d; --filete: #cdd3c9; --filete-forte: #6f7a94;
+  --cobalto: #1c3fb0; --cobalto-forte: #142e86; --on-cobalto: #ffffff;
+  --marca-texto: #ff9fbd; --foco: #1c3fb0;
+  --font-display: "Besley", "Rockwell", "Roboto Slab", Georgia, "Times New Roman", serif;
+  --font-text: "Atkinson Hyperlegible Next", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
-    --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #7a6416; --focus: #86b4ee; color-scheme: dark;
+    --louca: #0b1022; --folha: #121a36; --papel: #1a2347;
+    --tinta: #eef1fa; --tinta-2: #a8b3d2; --filete: #2b3662; --filete-forte: #6677ab;
+    --cobalto: #9db3ff; --cobalto-forte: #bccaff; --on-cobalto: #0b1022; --foco: #9db3ff;
+    color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e1622; --surface: #152133; --ink: #e5ebf3; --ink-2: #9db0c5; --line: #28384e; --line-strong: #43566f;
-  --accent: #86b4ee; --accent-ink: #0a1523; --accent-soft: #1d3250; --mark-bg: #7a6416; --focus: #86b4ee; color-scheme: dark;
+  --louca: #0b1022; --folha: #121a36; --papel: #1a2347;
+  --tinta: #eef1fa; --tinta-2: #a8b3d2; --filete: #2b3662; --filete-forte: #6677ab;
+  --cobalto: #9db3ff; --cobalto-forte: #bccaff; --on-cobalto: #0b1022; --foco: #9db3ff;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {
-  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.55;
-  padding-block: 20px 56px;
+  margin: 0; background: var(--louca); color: var(--tinta); font-family: var(--font-text); font-size: 16px; line-height: 24px;
+  padding-block: 24px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.pagina { max-width: 1060px; margin: 0 auto; display: flex; flex-direction: column; gap: clamp(40px, 7vw, 72px); }
-h1, h2, p, ul { margin: 0; }
-main { display: flex; flex-direction: column; gap: clamp(40px, 7vw, 72px); }
-a { color: var(--accent); }
-a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.pagina { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: clamp(48px, 8vw, 96px); }
+h1, h2, h3, p, ul { margin: 0; }
+main { display: flex; flex-direction: column; gap: clamp(48px, 8vw, 96px); }
+a { color: var(--cobalto); }
+a:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.rotulo { font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-2); }
 
-.topo { display: flex; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-.marca { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
-.marca svg { width: 32px; height: 32px; flex: none; }
-.marca .logo-fundo { fill: var(--accent); }
-.marca .logo-claro { fill: var(--accent-ink); }
-.marca .logo-marca { fill: var(--mark); }
-.marca span { font-family: var(--f-serif); font-size: 21px; font-weight: 700; letter-spacing: -.01em; }
+.topo { display: flex; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--filete); }
+.marca { display: inline-flex; align-items: center; gap: 12px; color: var(--tinta); text-decoration: none; }
+.marca:focus-visible { outline: 3px solid var(--foco); outline-offset: 4px; }
+.marca svg { width: 32px; height: 32px; flex: none; display: block; }
+.marca .m-f { fill: var(--folha); stroke: var(--filete-forte); stroke-width: 1; }
+.marca .m-c { fill: var(--cobalto); }
+.marca span { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 800; letter-spacing: -.01em; }
 
-.abertura { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
-.abertura h1 {
-  font-family: var(--f-serif); font-weight: 700; font-size: clamp(36px, 6.2vw, 58px); line-height: 1.06; letter-spacing: -.02em; text-wrap: balance;
-}
+.abertura { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
 .abertura .texto { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.abertura .sub { color: var(--ink-2); font-size: 18px; max-width: 46ch; }
-.acao { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; padding-top: 6px; }
+.abertura h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(36px, 5.6vw, 54px); line-height: 1.04; letter-spacing: -.015em; text-wrap: balance; }
+.abertura .sub { font-size: 18px; line-height: 28px; color: var(--tinta-2); max-width: 46ch; }
+.acao { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-top: 4px; }
 .botao {
-  display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 650; font-size: 17px;
-  padding: 13px 26px; border-radius: 4px; border: 1px solid var(--accent);
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px 24px;
+  background: var(--cobalto); color: var(--on-cobalto); border: 2px solid var(--cobalto); border-radius: 2px;
+  font-size: 17px; line-height: 24px; font-weight: 700; text-decoration: none;
 }
-.botao:hover { background: transparent; color: var(--accent); }
-.botao:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.acao small { color: var(--ink-2); font-size: 14px; }
+.botao:hover { background: var(--cobalto-forte); border-color: var(--cobalto-forte); }
+.botao:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.acao small { color: var(--tinta-2); font-size: 14px; line-height: 20px; }
 
-.ilustra { min-width: 0; }
-.ilustra svg { display: block; width: 100%; height: auto; max-width: 460px; margin-left: auto; }
-.ilustra .folha { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.5; }
-.ilustra .linha { fill: var(--line); }
-.ilustra .titulo { fill: var(--ink-2); opacity: .55; }
-.ilustra .aba { fill: none; stroke: var(--line-strong); stroke-width: 1.2; }
-.ilustra .aba-ativa { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
-.ilustra text { font-family: var(--f-ui); font-size: 13px; fill: var(--ink-2); }
-.ilustra .aba-ativa + text { fill: var(--accent); font-weight: 650; }
-.ilustra .grifo { fill: var(--mark-bg); }
-@keyframes grifar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@media (prefers-reduced-motion: no-preference) {
-  .ilustra .grifo { transform-box: fill-box; transform-origin: 0 50%; animation: grifar .7s cubic-bezier(.3, .7, .2, 1) both; }
-  .ilustra .g1 { animation-delay: .35s; }
-  .ilustra .g2 { animation-delay: .75s; }
-  .ilustra .g3 { animation-delay: 1.15s; }
+.parede { min-width: 0; }
+.parede svg { display: block; width: 100%; height: auto; max-width: 520px; margin-left: auto; }
+.parede .c { fill: var(--cobalto); }
+.parede .m { fill: var(--marca-texto); }
+.parede .t { fill: var(--tinta); }
+.parede .f { fill: var(--folha); }
+.parede .c { stroke: var(--cobalto); stroke-width: .6; }
+
+.recursos h2 { font-family: var(--font-display); font-size: 26px; line-height: 32px; font-weight: 800; letter-spacing: -.005em; margin-bottom: 28px; }
+.lista { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 56px; counter-reset: passo; }
+.lista li { border-top: 4px solid var(--tinta); padding-top: 16px; min-width: 0; display: grid; align-content: start; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 16px; counter-increment: passo; }
+.lista li::before {
+  content: counter(passo); grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  background: var(--cobalto); color: var(--on-cobalto); font-family: var(--font-display); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums;
 }
+.lista h3 { font-family: var(--font-display); font-size: 18px; line-height: 24px; font-weight: 700; padding-top: 8px; }
+.lista p { color: var(--tinta-2); max-width: 52ch; }
 
-.recursos h2 { font-family: var(--f-serif); font-size: 26px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 22px; }
-.lista { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 56px; }
-.lista li { border-top: 2px solid var(--line-strong); padding-top: 14px; min-width: 0; }
-.lista h3 { margin: 0 0 4px; font-size: 17px; font-weight: 650; }
-.lista p { color: var(--ink-2); max-width: 52ch; }
-
-.rodape { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--ink-2); max-width: 80ch; }
+.rodape { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px; border: 1px solid var(--filete); border-radius: 6px; background: var(--papel); color: var(--tinta-2); font-size: 14px; line-height: 20px; max-width: 84ch; }
+.rodape strong { color: var(--tinta); }
 
 @media (max-width: 820px) {
   .abertura { grid-template-columns: minmax(0, 1fr); }
-  .ilustra svg { margin-left: 0; max-width: 420px; }
+  .parede svg { margin-left: 0; max-width: 440px; }
 }
 @media (max-width: 620px) {
-  .lista { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  .abertura .sub { font-size: 17px; }
+  .lista { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .abertura .sub { font-size: 17px; line-height: 26px; }
 }
 </style>
 </head>
@@ -100,11 +112,10 @@ a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 <div class="pagina">
   <header class="topo">
     <a class="marca" href="./" aria-label="Indagatio, página inicial">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <rect class="logo-fundo" width="32" height="32" rx="7"/>
-        <rect class="logo-claro" x="7" y="8" width="18" height="3.4" rx="1.7"/>
-        <rect class="logo-marca" x="7" y="14.3" width="13" height="3.4" rx="1.7"/>
-        <rect class="logo-claro" x="7" y="20.6" width="16" height="3.4" rx="1.7"/>
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect class="m-f" x=".5" y=".5" width="31" height="31"/>
+        <rect class="m-c" x="0" y="0" width="32" height="16"/>
+        <path class="m-c" d="M0 16A16 16 0 0 0 32 16L24 16A8 8 0 0 1 8 16Z"/>
       </svg>
       <span>Indagatio</span>
     </a>
@@ -113,6 +124,7 @@ a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
   <main>
     <section class="abertura">
       <div class="texto">
+        <div class="rotulo">Diário de Justiça Eletrônico Nacional</div>
         <h1>Publicações judiciais, direto da fonte.</h1>
         <p class="sub">Busque acórdãos, decisões e intimações no Diário de Justiça Eletrônico Nacional, separe a ementa do resto do texto e leve os resultados para uma planilha.</p>
         <div class="acao">
@@ -120,27 +132,23 @@ a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
           <small>Sem cadastro. Funciona direto no navegador.</small>
         </div>
       </div>
-      <div class="ilustra">
-        <svg viewBox="0 0 420 330" aria-hidden="true" focusable="false">
-          <rect class="folha" x="8" y="8" width="404" height="314" rx="6"/>
-          <rect class="titulo" x="32" y="32" width="150" height="10" rx="2"/>
-          <rect class="aba-ativa" x="32" y="60" width="74" height="28" rx="4"/>
-          <text x="69" y="78.5" text-anchor="middle">Ementa</text>
-          <rect class="aba" x="114" y="60" width="66" height="28" rx="4"/>
-          <text x="147" y="78.5" text-anchor="middle">Trecho</text>
-          <rect class="aba" x="188" y="60" width="124" height="28" rx="4"/>
-          <text x="250" y="78.5" text-anchor="middle">Acórdão completo</text>
-
-          <rect class="linha" x="32" y="116" width="356" height="9" rx="2"/>
-          <rect class="linha" x="32" y="140" width="330" height="9" rx="2"/>
-          <rect class="linha" x="32" y="164" width="344" height="9" rx="2"/>
-          <rect class="grifo g1" x="118" y="164" width="104" height="9" rx="2"/>
-          <rect class="linha" x="32" y="188" width="300" height="9" rx="2"/>
-          <rect class="linha" x="32" y="224" width="352" height="9" rx="2"/>
-          <rect class="grifo g2" x="32" y="224" width="84" height="9" rx="2"/>
-          <rect class="linha" x="32" y="248" width="340" height="9" rx="2"/>
-          <rect class="grifo g3" x="206" y="248" width="120" height="9" rx="2"/>
-          <rect class="linha" x="32" y="272" width="206" height="9" rx="2"/>
+      <div class="parede">
+        <svg viewBox="0 0 480 288" aria-hidden="true" focusable="false">
+          <rect class="f" x="0" y="0" width="96" height="96"/>
+          <path class="c" d="M0 96 A96 96 0 0 1 96 0 L96 48 A48 48 0 0 0 48 96 Z"/>
+          <rect class="f" x="288" y="96" width="96" height="96"/>
+          <path class="c" d="M288 96 A96 96 0 0 0 384 192 L384 144 A48 48 0 0 1 336 96 Z"/>
+          <rect class="f" x="384" y="96" width="96" height="96"/>
+          <path class="c" d="M480 96 A96 96 0 0 1 384 192 L384 144 A48 48 0 0 0 432 96 Z"/>
+          <rect class="f" x="96" y="192" width="96" height="96"/>
+          <path class="c" d="M96 192 A96 96 0 0 0 192 288 L192 240 A48 48 0 0 1 144 192 Z"/>
+          <rect class="f" x="192" y="192" width="96" height="96"/>
+          <path class="c" d="M288 192 A96 96 0 0 1 192 288 L192 240 A48 48 0 0 0 240 192 Z"/>
+          <rect class="c" x="96" y="0" width="192" height="192"/>
+          <rect class="m" x="288" y="0" width="192" height="96"/>
+          <rect class="t" x="0" y="96" width="96" height="192"/>
+          <rect class="t" x="288" y="192" width="96" height="96"/>
+          <rect class="c" x="384" y="192" width="96" height="96"/>
         </svg>
       </div>
     </section>
