@@ -1365,6 +1365,10 @@ code { font-family: var(--font-mono); font-size: .92em; }
       tentativas5xx: 3,
       recuo5xxMs: 3000,
       limiteAltoMs: 30000,   // espera quando x-ratelimit-remaining chega perto de zero
+      timeoutMs: 50000,      // se a API não responder neste prazo, desiste daquela tentativa
+      tentativasTempo: 1,    // quantas vezes tenta de novo depois de estourar o prazo
+      temposSeguidos: 2,     // consultas seguidas sem resposta que interrompem a busca
+      esperaTempoMs: 2000,
       confirmarAcima: 1000   // pergunta antes de baixar mais que isso
     }, opts.cfg || {});
     var doFetch = opts.fetch || function (u, o) { return root.fetch(u, o); };
@@ -1392,16 +1396,58 @@ code { font-family: var(--font-mono); font-size: .92em; }
     }
     async function corpo(res) { try { return (await res.text()).slice(0, 300); } catch (e) { return ''; } }
 
+    /* Roda fn com prazo. Sem isso, uma chamada que a rede ou a API deixa pendurada trava a busca para sempre.
+       Enquanto espera, avisa a cada segundo (h.resposta) quantos segundos já se passaram. */
+    async function comPrazo(h, fn) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var tmr = null, beat = null, t0 = agora(), SINAL = {};
+      var prazo = new Promise(function (resolve, reject) {
+        if (!(cfg.timeoutMs > 0)) return;
+        tmr = setTimeout(function () { reject(SINAL); if (ctrl) { try { ctrl.abort(); } catch (e) {} } }, cfg.timeoutMs);
+      });
+      if (h && h.resposta) beat = setInterval(function () { h.resposta(Math.round((agora() - t0) / 1000)); }, 1000);
+      try {
+        return await Promise.race([fn(ctrl ? ctrl.signal : undefined), prazo]);
+      } catch (e) {
+        if (e === SINAL) throw ErroApi('tempo', 'A API do CNJ não respondeu em ' + Math.round(cfg.timeoutMs / 1000) + ' s.', { segundos: Math.round(cfg.timeoutMs / 1000) });
+        throw e;
+      } finally {
+        clearTimeout(tmr); clearInterval(beat);
+      }
+    }
+
     async function pedir(url, h) {
-      var t429 = 0, t5 = 0;
+      var t429 = 0, t5 = 0, tTempo = 0;
       for (;;) {
         if (cancelado(h)) throw ErroApi('cancelado', 'Busca cancelada.');
-        var res;
+        var got;
         try {
-          res = await doFetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, cache: 'no-store', credentials: 'omit' });
+          got = await comPrazo(h, async function (signal) {
+            var rs;
+            try {
+              rs = await doFetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, cache: 'no-store', credentials: 'omit', signal: signal });
+            } catch (e) {
+              throw ErroApi('rede', 'Não consegui falar com a API do CNJ.', { url: url, causa: String(e && e.message ? e.message : e) });
+            }
+            var g = { res: rs };
+            if (rs.ok && rs.status !== 404) {
+              try { g.dados = await rs.json(); }
+              catch (e) { g.jsonErro = String(e && e.message ? e.message : e); }
+            } else if (rs.status >= 500 || (rs.status !== 429 && rs.status !== 404)) {
+              g.corpo = await corpo(rs);
+            }
+            return g;
+          });
         } catch (e) {
-          throw ErroApi('rede', 'Não consegui falar com a API do CNJ.', { url: url, causa: String(e && e.message ? e.message : e) });
+          if (e && e.tipo === 'tempo') {
+            e.url = url;
+            if (++tTempo > cfg.tentativasTempo) throw e;
+            await esperar(cfg.esperaTempoMs, h, 'A API demorou demais para responder. Tentando de novo');
+            continue;
+          }
+          throw e;
         }
+        var res = got.res;
         var lim = cab(res, 'x-ratelimit-limit'), rest = cab(res, 'x-ratelimit-remaining');
         if (h && h.limite) h.limite({ limite: lim, restantes: rest });
         if (res.status === 429) {
@@ -1411,16 +1457,14 @@ code { font-family: var(--font-mono); font-size: .92em; }
           continue;
         }
         if (res.status >= 500) {
-          if (++t5 > cfg.tentativas5xx) throw ErroApi('http', 'A API respondeu com erro ' + res.status + '.', { url: url, status: res.status, corpo: await corpo(res) });
+          if (++t5 > cfg.tentativas5xx) throw ErroApi('http', 'A API respondeu com erro ' + res.status + '.', { url: url, status: res.status, corpo: got.corpo });
           await esperar(cfg.recuo5xxMs * t5, h, 'A API respondeu com erro ' + res.status + '. Tentando de novo');
           continue;
         }
         if (res.status === 404) return { vazio: true, rest: rest, lim: lim };
-        if (!res.ok) throw ErroApi('http', 'A API recusou a consulta (erro ' + res.status + ').', { url: url, status: res.status, corpo: await corpo(res) });
-        var dados;
-        try { dados = await res.json(); }
-        catch (e) { throw ErroApi('json', 'A resposta da API não veio no formato esperado (JSON).', { url: url, causa: String(e && e.message ? e.message : e) }); }
-        return { dados: dados, rest: rest, lim: lim };
+        if (!res.ok) throw ErroApi('http', 'A API recusou a consulta (erro ' + res.status + ').', { url: url, status: res.status, corpo: got.corpo });
+        if (got.jsonErro !== undefined) throw ErroApi('json', 'A resposta da API não veio no formato esperado (JSON).', { url: url, causa: got.jsonErro });
+        return { dados: got.dados, rest: rest, lim: lim };
       }
     }
 
@@ -1464,17 +1508,20 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
     async function executar(consultas, h) {
       h = h || {};
-      var res = { consultas: [], cancelado: false, erro: null };
+      var res = { consultas: [], cancelado: false, erro: null }, semResposta = 0;
       for (var i = 0; i < consultas.length; i++) {
         if (cancelado(h)) { res.cancelado = true; break; }
         if (h.consulta) h.consulta(i, consultas.length, consultas[i].rotulo);
         try {
           res.consultas.push(await buscarConsulta(consultas[i], h));
+          semResposta = 0;
         } catch (e) {
           if (e && e.tipo === 'cancelado') { res.cancelado = true; break; }
           if (!e || !e.tipo) throw e;
           res.consultas.push({ rotulo: consultas[i].rotulo, erro: e });
           if (e.tipo === 'rede' || e.tipo === '429') { res.erro = e; break; }
+          if (e.tipo === 'tempo' && ++semResposta >= cfg.temposSeguidos) { res.erro = e; break; }
+          if (e.tipo !== 'tempo') semResposta = 0;
         }
         if (i < consultas.length - 1) await esperar(cfg.ritmoMs, h, '');
       }
@@ -1484,7 +1531,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     /* Só conta quantas publicações cada consulta tem (uma chamada curta por consulta; não baixa os itens). */
     async function contar(consultas, h) {
       h = h || {};
-      var res = { contagens: [], cancelado: false, erro: null };
+      var res = { contagens: [], cancelado: false, erro: null }, semResposta = 0;
       for (var i = 0; i < consultas.length; i++) {
         if (cancelado(h)) { res.cancelado = true; break; }
         if (h.consulta) h.consulta(i, consultas.length, consultas[i].rotulo);
@@ -1499,6 +1546,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
             else n = d && Array.isArray(d.items) ? d.items.length : (Array.isArray(d) ? d.length : 0);
           }
           res.contagens.push({ rotulo: consultas[i].rotulo, count: n });
+          semResposta = 0;
           if (h.contagem) h.contagem(i, n, null);
         } catch (e) {
           if (e && e.tipo === 'cancelado') { res.cancelado = true; break; }
@@ -1506,6 +1554,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
           res.contagens.push({ rotulo: consultas[i].rotulo, count: null, erro: e });
           if (h.contagem) h.contagem(i, null, e);
           if (e.tipo === 'rede' || e.tipo === '429') { res.erro = e; break; }
+          if (e.tipo === 'tempo' && ++semResposta >= cfg.temposSeguidos) { res.erro = e; break; }
+          if (e.tipo !== 'tempo') semResposta = 0;
         }
         if (i < consultas.length - 1) await esperar(cfg.ritmoMs, h, '');
       }
@@ -1840,6 +1890,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       cancelado: function () { return estado.cancelar; },
       url: function (u) { $('espera').hidden = true; estado.urls.push(u); },
       limite: function (l) { estado.limite = l; },
+      resposta: avisoDeEspera,
       consulta: function (i, n, rotulo) {
         rotuloAtual = rotulo;
         pos = n > 1 ? 'Consulta ' + (i + 1) + ' de ' + n + ' · ' : '';
@@ -1898,6 +1949,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
     } else if (r.erro && r.erro.tipo === 'rede') {
       mostrarErro('Não consegui falar com a API do CNJ. Pode ser falta de internet, bloqueio de rede (comum em órgãos públicos) ou o navegador impedindo um arquivo local de consultar outro site. Tente o plano B abaixo.', r.erro);
       mostrarPlanoB();
+    } else if (r.erro && r.erro.tipo === 'tempo') {
+      mostrarErro(textoSemResposta(r.erro), r.erro);
     } else if (r.erro) {
       mostrarErro(r.erro.message, r.erro);
     } else if (algumErro) {
@@ -2023,6 +2076,19 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
   function consultasDe(f, termo) { return A.planejar(Object.assign({}, f, { termos: termo })); }
 
+  /* mostra que a página não travou: a API ainda não respondeu à chamada em andamento */
+  function avisoDeEspera(seg) {
+    if (seg < 4) return;
+    var el = $('espera');
+    el.hidden = false;
+    el.textContent = 'Aguardando a resposta da API do CNJ há ' + seg + ' s. Se passar de ' + Math.round(cliente.cfg.timeoutMs / 1000) + ' s, eu tento de novo.';
+  }
+  function textoSemResposta(e) {
+    return 'A API do CNJ não respondeu a tempo (esperei ' + (e.segundos || Math.round(cliente.cfg.timeoutMs / 1000)) + ' s, mais de uma vez). ' +
+      'Pode ser lentidão do serviço ou da rede daqui. Tente de novo em alguns minutos, com um período menor ou informando o órgão. ' +
+      'Se o problema persistir, desmarque “Busca ampliada” e faça uma busca simples.';
+  }
+
   function iniciarContagem() {
     estado.buscando = true; estado.cancelar = false; estado.urls = [];
     estado.variacoes.contando = true;
@@ -2044,6 +2110,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
     if (r && r.erro && r.erro.tipo === 'rede') {
       mostrarErro('Não consegui falar com a API do CNJ. Pode ser falta de internet, bloqueio de rede (comum em órgãos públicos) ou o navegador impedindo um arquivo local de consultar outro site. Tente o plano B abaixo.', r.erro);
       mostrarPlanoB();
+    } else if (r && r.erro && r.erro.tipo === 'tempo') {
+      mostrarErro(textoSemResposta(r.erro), r.erro);
     } else if (r && r.erro) {
       mostrarErro(r.erro.message, r.erro);
     }
@@ -2064,6 +2132,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
         cancelado: function () { return estado.cancelar; },
         url: function (u) { $('espera').hidden = true; estado.urls.push(u); },
         limite: function (l) { estado.limite = l; },
+        resposta: avisoDeEspera,
         consulta: function (i, n, rotulo) {
           $('prog').max = n; $('prog').value = i;
           $('andamento-txt').textContent = 'Contando as variações (' + (i + 1) + ' de ' + n + '): “' + rotulo + '”…';
