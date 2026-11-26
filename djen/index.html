@@ -16,7 +16,7 @@
 <meta property="og:description" content="Busque acórdãos, decisões e intimações no Diário de Justiça Eletrônico Nacional (DJEN), inclusive do TJMA, por tema, processo, parte, advogado ou órgão. Separa a ementa e exporta para planilha. Ferramenta independente e não oficial.">
 <meta property="og:url" content="https://consulta-djen-br.github.io/consulta-djen/djen/">
 <title>Buscar publicações do DJEN | Indagatio</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fbfcf9'/%3E%3Crect width='32' height='16' fill='%231c3fb0'/%3E%3Cpath d='M0 16A16 16 0 0 0 32 16L24 16A8 8 0 0 1 8 16Z' fill='%231c3fb0'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cstyle%3E.g,.r%7Bfill:%23eef1ec%7D.c%7Bfill:%231c3fb0%7D%3C/style%3E%3Crect class='g' width='64' height='64'/%3E%3Cpath class='c' d='M18 0 L5.17 2.14 L8.49 8.49 L2.14 5.17 L0 18 L-2.14 5.17 L-8.49 8.49 L-5.17 2.14 L-18 0 L-5.17 -2.14 L-8.49 -8.49 L-2.14 -5.17 L0 -18 L2.14 -5.17 L8.49 -8.49 L5.17 -2.14Z'/%3E%3Cpath class='c' d='M82 0 L69.17 2.14 L72.49 8.49 L66.14 5.17 L64 18 L61.86 5.17 L55.51 8.49 L58.83 2.14 L46 0 L58.83 -2.14 L55.51 -8.49 L61.86 -5.17 L64 -18 L66.14 -5.17 L72.49 -8.49 L69.17 -2.14Z'/%3E%3Cpath class='c' d='M18 64 L5.17 66.14 L8.49 72.49 L2.14 69.17 L0 82 L-2.14 69.17 L-8.49 72.49 L-5.17 66.14 L-18 64 L-5.17 61.86 L-8.49 55.51 L-2.14 58.83 L0 46 L2.14 58.83 L8.49 55.51 L5.17 61.86Z'/%3E%3Cpath class='c' d='M82 64 L69.17 66.14 L72.49 72.49 L66.14 69.17 L64 82 L61.86 69.17 L55.51 72.49 L58.83 66.14 L46 64 L58.83 61.86 L55.51 55.51 L61.86 58.83 L64 46 L66.14 58.83 L72.49 55.51 L69.17 61.86Z'/%3E%3Cpolygon class='c' points='56,41.94 41.94,56 22.06,56 8,41.94 8,22.06 22.06,8 41.94,8 56,22.06'/%3E%3Cpath class='r' d='M32 26 C38.4 22.4 37.44 16.64 32 14C26.56 16.64 25.6 22.4 32 26Z M38 32 C41.6 38.4 47.36 37.44 50 32C47.36 26.56 41.6 25.6 38 32Z M32 38 C25.6 41.6 26.56 47.36 32 50C37.44 47.36 38.4 41.6 32 38Z M26 32 C22.4 25.6 16.64 26.56 14 32C16.64 37.44 22.4 38.4 26 32Z M36.53 27.47 C40.9 28.2 43.43 24.89 42.61 21.39C39.11 20.57 35.8 23.1 36.53 27.47Z M36.53 36.53 C35.8 40.9 39.11 43.43 42.61 42.61C43.43 39.11 40.9 35.8 36.53 36.53Z M27.47 36.53 C23.1 35.8 20.57 39.11 21.39 42.61C24.89 43.43 28.2 40.9 27.47 36.53Z M27.47 27.47 C28.2 23.1 24.89 20.57 21.39 21.39C20.57 24.89 23.1 28.2 27.47 27.47Z'/%3E%3Ccircle class='r' cx='32' cy='32' r='5'/%3E%3Ccircle class='c' cx='32' cy='32' r='2.4'/%3E%3C/svg%3E">
 <link rel="preload" href="../fonts/Besley-wght.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../fonts/AtkinsonNext-wght.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -35,6 +35,7 @@
   --tinta-2: #46516d;
   --filete: #cdd3c9;
   --filete-forte: #6f7a94;
+  --vidrado: #eef1ec; --vidrado-2: #e6ebe8; --vidrado-3: #f1f2ec; --rejunte: #d6cbb4;
   --cobalto: #1c3fb0;
   --cobalto-forte: #142e86;
   --on-cobalto: #ffffff;
@@ -55,6 +56,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --louca: #0b1022; --folha: #121a36; --papel: #1a2347;
+    --vidrado: #141c3b; --vidrado-2: #182141; --vidrado-3: #111936; --rejunte: #333c63;
     --tinta: #eef1fa; --tinta-2: #a8b3d2; --filete: #2b3662; --filete-forte: #6677ab;
     --cobalto: #9db3ff; --cobalto-forte: #bccaff; --on-cobalto: #0b1022; --cobalto-claro: #1d2a5c;
     --carimbo: #ff8c96; --aviso: #3a3010; --on-aviso: #f3dc92; --aviso-filete: #7a6420; --foco: #9db3ff;
@@ -64,6 +66,7 @@
 }
 :root[data-theme="dark"] {
   --louca: #0b1022; --folha: #121a36; --papel: #1a2347;
+  --vidrado: #141c3b; --vidrado-2: #182141; --vidrado-3: #111936; --rejunte: #333c63;
   --tinta: #eef1fa; --tinta-2: #a8b3d2; --filete: #2b3662; --filete-forte: #6677ab;
   --cobalto: #9db3ff; --cobalto-forte: #bccaff; --on-cobalto: #0b1022; --cobalto-claro: #1d2a5c;
   --carimbo: #ff8c96; --aviso: #3a3010; --on-aviso: #f3dc92; --aviso-filete: #7a6420; --foco: #9db3ff;
@@ -89,11 +92,13 @@ a { color: var(--cobalto); }
 .eyebrow { font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-2); }
 h1 { font-size: 32px; line-height: 36px; letter-spacing: -.01em; }
 .lead { font-size: 18px; line-height: 28px; color: var(--tinta-2); max-width: 68ch; }
-.navsite { max-width: 1120px; margin: 0 auto 32px; padding-bottom: 16px; border-bottom: 1px solid var(--filete); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.navsite { position: relative; max-width: 1120px; margin: 0 auto 32px; padding-bottom: 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .navsite .marca { display: inline-flex; align-items: center; gap: 12px; color: var(--tinta); text-decoration: none; }
-.navsite .marca svg { width: 32px; height: 32px; flex: none; display: block; }
-.navsite .m-f { fill: var(--folha); stroke: var(--filete-forte); stroke-width: 1; }
+.navsite .marca svg { width: 36px; height: 36px; flex: none; display: block; }
+.navsite .m-g, .navsite .m-r { fill: var(--vidrado); }
 .navsite .m-c { fill: var(--cobalto); }
+.navsite .m-j { fill: none; stroke: var(--rejunte); stroke-width: 1; }
+.navsite::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: var(--cobalto); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 14'%3E%3Cpath fill-rule='evenodd' d='M0 0H28 V14 H0Z M19.8 7 L15.85 7.77 L16.9 9.9 L14.77 8.85 L14 12.8 L13.23 8.85 L11.1 9.9 L12.15 7.77 L8.2 7 L12.15 6.23 L11.1 4.1 L13.23 5.15 L14 1.2 L14.77 5.15 L16.9 4.1 L15.85 6.23Z M0 4 L3 7 L0 10 L-3 7Z M28 4 L31 7 L28 10 L25 7Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 14'%3E%3Cpath fill-rule='evenodd' d='M0 0H28 V14 H0Z M19.8 7 L15.85 7.77 L16.9 9.9 L14.77 8.85 L14 12.8 L13.23 8.85 L11.1 9.9 L12.15 7.77 L8.2 7 L12.15 6.23 L11.1 4.1 L13.23 5.15 L14 1.2 L14.77 5.15 L16.9 4.1 L15.85 6.23Z M0 4 L3 7 L0 10 L-3 7Z M28 4 L31 7 L28 10 L25 7Z'/%3E%3C/svg%3E"); -webkit-mask-size: 28px 14px; mask-size: 28px 14px; -webkit-mask-repeat: round no-repeat; mask-repeat: round no-repeat; -webkit-mask-position: 0 0; mask-position: 0 0; }
 .navsite .marca span { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 800; letter-spacing: -.01em; }
 .navsite .inicio { font-size: 14px; line-height: 20px; font-weight: 700; color: var(--cobalto); }
 .navsite a:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
@@ -108,8 +113,9 @@ h1 { font-size: 32px; line-height: 36px; letter-spacing: -.01em; }
 }
 .etapa-cab { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; align-items: center; }
 .etapa-num {
-  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
   background: var(--cobalto); color: var(--on-cobalto); font-family: var(--font-display); font-size: 20px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath fill-rule='evenodd' d='M44 31.11 L31.11 44 L12.89 44 L0 31.11 L0 12.89 L12.89 0 L31.11 0 L44 12.89Z M41.2 29.95 L29.95 41.2 L14.05 41.2 L2.8 29.95 L2.8 14.05 L14.05 2.8 L29.95 2.8 L41.2 14.05Z M39.6 29.29 L29.29 39.6 L14.71 39.6 L4.4 29.29 L4.4 14.71 L14.71 4.4 L29.29 4.4 L39.6 14.71Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cpath fill-rule='evenodd' d='M44 31.11 L31.11 44 L12.89 44 L0 31.11 L0 12.89 L12.89 0 L31.11 0 L44 12.89Z M41.2 29.95 L29.95 41.2 L14.05 41.2 L2.8 29.95 L2.8 14.05 L14.05 2.8 L29.95 2.8 L41.2 14.05Z M39.6 29.29 L29.29 39.6 L14.71 39.6 L4.4 29.29 L4.4 14.71 L14.71 4.4 L29.29 4.4 L39.6 14.71Z'/%3E%3C/svg%3E"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;
 }
 h2 { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -.005em; }
 .etapa-sub { grid-column: 2; color: var(--tinta-2); max-width: 72ch; }
@@ -171,7 +177,31 @@ progress { width: 100%; height: 10px; accent-color: var(--cobalto); }
 .manual { display: flex; flex-direction: column; gap: 8px; }
 .manual textarea { font-family: var(--font-mono); font-size: 13px; }
 
-.filtros { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 16px; align-items: end; }
+/* Caixa de escolha: campo de texto com painel de opções em grupos (órgãos e relatores). */
+.seletor { position: relative; }
+.seletor input { padding-right: 48px; }
+.seletor-seta { position: absolute; top: 1px; right: 1px; bottom: 1px; width: 44px; min-height: 0; padding: 0; border: 0; border-left: 1px solid var(--filete); border-radius: 0 2px 2px 0; background: transparent; color: var(--cobalto); }
+.seletor-seta::before { content: ""; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+.seletor[data-aberto] .seletor-seta::before { transform: translateY(2px) rotate(225deg); }
+.seletor[data-aberto] input { border-color: var(--cobalto); }
+.opcoes {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); max-height: min(24rem, 60vh); overflow: auto; overscroll-behavior: contain;
+  background: var(--folha); border: 1px solid var(--cobalto); border-top-width: 4px; box-shadow: 0 22px 34px -18px rgba(16, 26, 54, 0.55);
+}
+.op-titulo { padding: 8px 12px 6px; background: var(--papel); border-top: 1px solid var(--filete); border-bottom: 1px solid var(--filete); color: var(--tinta-2); font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.op-grupo:first-child .op-titulo { border-top: 0; }
+.op-titulo::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: -1px; background: var(--cobalto); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 12 12'%3E%3Cpath d='M5.6 0 L1.76 0.73 L2.83 2.83 L0.73 1.76 L0 5.6 L-0.73 1.76 L-2.83 2.83 L-1.76 0.73 L-5.6 0 L-1.76 -0.73 L-2.83 -2.83 L-0.73 -1.76 L0 -5.6 L0.73 -1.76 L2.83 -2.83 L1.76 -0.73Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 12 12'%3E%3Cpath d='M5.6 0 L1.76 0.73 L2.83 2.83 L0.73 1.76 L0 5.6 L-0.73 1.76 L-2.83 2.83 L-1.76 0.73 L-5.6 0 L-1.76 -0.73 L-2.83 -2.83 L-0.73 -1.76 L0 -5.6 L0.73 -1.76 L2.83 -2.83 L1.76 -0.73Z'/%3E%3C/svg%3E"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+.op { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 44px; padding: 10px 12px 10px 16px; cursor: pointer; color: var(--tinta); overflow-wrap: anywhere; box-shadow: inset 0 -1px 0 var(--filete); }
+.op:hover, .op.ativa { background: var(--cobalto-claro); }
+.op.ativa { outline: 2px solid var(--foco); outline-offset: -2px; }
+.op[aria-selected="true"] { font-weight: 700; box-shadow: inset 4px 0 0 var(--cobalto), inset 0 -1px 0 var(--filete); }
+.op-n { flex: none; font-family: var(--font-mono); font-size: 12px; line-height: 20px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.op-vazio { padding: 14px 16px; color: var(--tinta-2); font-size: 14px; line-height: 20px; }
+.escolhas { display: flex; flex-wrap: wrap; gap: 8px; }
+.escolha { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 2px 2px 10px; background: var(--cobalto-claro); border: 1px solid var(--cobalto); border-radius: 2px; color: var(--tinta); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+.escolha button { flex: none; min-height: 32px; min-width: 32px; padding: 0; border: 0; background: transparent; color: var(--cobalto); font-size: 18px; line-height: 1; }
+.escolha button:hover:not(:disabled) { background: var(--papel); }
+.filtros { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: end; }
 .resumo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; border-top: 2px solid var(--tinta); padding-top: 16px; }
 .resumo-txt { font-weight: 700; }
 
@@ -257,7 +287,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
 <body>
 <nav class="navsite" aria-label="Navegação do site">
   <a class="marca" href="../" aria-label="Indagatio, página inicial">
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect class="m-f" x=".5" y=".5" width="31" height="31"/><rect class="m-c" x="0" y="0" width="32" height="16"/><path class="m-c" d="M0 16A16 16 0 0 0 32 16L24 16A8 8 0 0 1 8 16Z"/></svg>
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect class="m-g" width="64" height="64"/><path class="m-c" d="M18 0 L5.17 2.14 L8.49 8.49 L2.14 5.17 L0 18 L-2.14 5.17 L-8.49 8.49 L-5.17 2.14 L-18 0 L-5.17 -2.14 L-8.49 -8.49 L-2.14 -5.17 L0 -18 L2.14 -5.17 L8.49 -8.49 L5.17 -2.14Z"/><path class="m-c" d="M82 0 L69.17 2.14 L72.49 8.49 L66.14 5.17 L64 18 L61.86 5.17 L55.51 8.49 L58.83 2.14 L46 0 L58.83 -2.14 L55.51 -8.49 L61.86 -5.17 L64 -18 L66.14 -5.17 L72.49 -8.49 L69.17 -2.14Z"/><path class="m-c" d="M18 64 L5.17 66.14 L8.49 72.49 L2.14 69.17 L0 82 L-2.14 69.17 L-8.49 72.49 L-5.17 66.14 L-18 64 L-5.17 61.86 L-8.49 55.51 L-2.14 58.83 L0 46 L2.14 58.83 L8.49 55.51 L5.17 61.86Z"/><path class="m-c" d="M82 64 L69.17 66.14 L72.49 72.49 L66.14 69.17 L64 82 L61.86 69.17 L55.51 72.49 L58.83 66.14 L46 64 L58.83 61.86 L55.51 55.51 L61.86 58.83 L64 46 L66.14 58.83 L72.49 55.51 L69.17 61.86Z"/><polygon class="m-c" points="56,41.94 41.94,56 22.06,56 8,41.94 8,22.06 22.06,8 41.94,8 56,22.06"/><path class="m-r" d="M32 26 C38.4 22.4 37.44 16.64 32 14C26.56 16.64 25.6 22.4 32 26Z M38 32 C41.6 38.4 47.36 37.44 50 32C47.36 26.56 41.6 25.6 38 32Z M32 38 C25.6 41.6 26.56 47.36 32 50C37.44 47.36 38.4 41.6 32 38Z M26 32 C22.4 25.6 16.64 26.56 14 32C16.64 37.44 22.4 38.4 26 32Z M36.53 27.47 C40.9 28.2 43.43 24.89 42.61 21.39C39.11 20.57 35.8 23.1 36.53 27.47Z M36.53 36.53 C35.8 40.9 39.11 43.43 42.61 42.61C43.43 39.11 40.9 35.8 36.53 36.53Z M27.47 36.53 C23.1 35.8 20.57 39.11 21.39 42.61C24.89 43.43 28.2 40.9 27.47 36.53Z M27.47 27.47 C28.2 23.1 24.89 20.57 21.39 21.39C20.57 24.89 23.1 28.2 27.47 27.47Z"/><circle class="m-r" cx="32" cy="32" r="5"/><circle class="m-c" cx="32" cy="32" r="2.4"/><rect class="m-j" x=".5" y=".5" width="63" height="63"/></svg>
     <span>Indagatio</span>
   </a>
   <a class="inicio" href="../">Voltar à página inicial</a>
@@ -318,8 +348,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
           </div>
           <div class="campo">
             <label for="orgao-busca">Órgão (opcional)</label>
-            <input id="orgao-busca" type="text" list="lista-orgaos-busca" autocomplete="off" spellcheck="false" placeholder="ex.: nome da câmara ou da vara">
-            <datalist id="lista-orgaos-busca"></datalist>
+            <input id="orgao-busca" type="text" autocomplete="off" spellcheck="false" placeholder="clique para escolher a câmara, a seção ou a vara">
             <span id="orgao-dica" class="dica"></span>
           </div>
           <details id="mais-filtros" class="mais">
@@ -405,7 +434,9 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
     <div class="filtros">
       <div class="campo"><label for="filtro">Filtrar na lista</label><input id="filtro" type="search" autocomplete="off" spellcheck="false" placeholder="processo, parte, advogado ou palavra do texto"></div>
-      <div class="campo"><label for="f-orgao">Órgão</label><input id="f-orgao" type="search" list="lista-orgaos" autocomplete="off" spellcheck="false" placeholder="ex.: parte do nome do órgão"><datalist id="lista-orgaos"></datalist></div>
+      <div class="campo"><label for="f-orgao">Órgão ou relator</label><input id="f-orgao" type="text" autocomplete="off" spellcheck="false" placeholder="escolha ou digite parte do nome">
+        <select id="f-relator" hidden aria-hidden="true" tabindex="-1"><option value="">Todos os relatores</option></select>
+        <div id="f-marcas" class="escolhas" hidden></div></div>
       <div class="campo"><label for="f-ato">Ato</label><select id="f-ato"></select></div>
     </div>
     <div class="filtros">
@@ -416,7 +447,6 @@ code { font-family: var(--font-mono); font-size: .92em; }
         <select id="f-modo"><option value="ementa">Ementa (quando houver)</option><option value="trecho">Trecho em volta do termo</option></select></div>
     </div>
     <div class="filtros">
-      <div class="campo"><label for="f-relator">Relator</label><select id="f-relator"><option value="">Todos os relatores</option></select></div>
       <div class="campo"><label for="f-nao">Não conter</label><input id="f-nao" type="text" autocomplete="off" spellcheck="false" placeholder="palavras a excluir, separadas por ponto e vírgula"></div>
       <div class="campo"><label for="f-inteira">Palavras inteiras</label>
         <select id="f-inteira"><option value="">Aceitar parte de palavra</option><option value="1">Só palavra inteira</option></select></div>
@@ -1764,8 +1794,36 @@ code { font-family: var(--font-mono); font-size: .92em; }
   /* A API só filtra por órgão pelo código numérico, que vem em cada resultado (idOrgao). O arquivo aprende os pares nome/código
      dos resultados que já viu e os guarda neste navegador; assim o nome de uma câmara ou vara vira um filtro da própria API. */
   var CHAVE_IDS = 'pub-tjma-orgaoids-v1';
-  /* Códigos já conferidos na API do CNJ; o que o navegador aprender depois sobrescreve esta lista. */
-  var SEMENTE_ORGAOS = { 'Quinta Câmara de Direito Privado': '43923' };
+  /* Câmaras, seções e demais órgãos de 2º grau do TJMA, com os códigos conferidos na API do CNJ (varas e juizados o navegador aprende
+     sozinho, a partir dos resultados). O que o navegador aprender depois sobrescreve esta lista. */
+  var SEMENTE_ORGAOS = {
+    '1ª Câmara Cível': '458',
+    '1ª Câmara Criminal': '461',
+    '2ª Câmara Cível': '756',
+    '2ª Câmara Criminal': '585',
+    '3ª Câmara Cível': '449',
+    '3ª Câmara Criminal': '497',
+    '4ª Câmara Cível': '600',
+    '5ª Câmara Cível': '718',
+    '6ª Câmara Cível': '579',
+    '7ª Câmara Cível': '17139',
+    'Órgão Especial': '32447',
+    'Presidência': '435',
+    'Primeira Câmara de Direito Privado': '38069',
+    'Primeira Câmara de Direito Público': '38052',
+    'Primeiras Câmaras Cíveis Reunidas': '726',
+    'Quarta Câmara de Direito Privado': '38067',
+    'Quinta Câmara de Direito Privado': '43923',
+    'Seção Cível': '520',
+    'Seção de Direito Criminal': '41021',
+    'Seção de Direito Privado': '38044',
+    'Seção de Direito Público': '38047',
+    'Segunda Câmara de Direito Privado': '38048',
+    'Segunda Câmara de Direito Público': '38055',
+    'SEGUNDAS CÂMARAS CÍVEIS REUNIDAS': '532',
+    'Terceira Câmara de Direito Privado': '38050',
+    'Terceira Câmara de Direito Público': '38065'
+  };
   var orgaoIds = {};
   Object.keys(SEMENTE_ORGAOS).forEach(function (k) { orgaoIds[k] = SEMENTE_ORGAOS[k]; });
   try {
@@ -1773,6 +1831,34 @@ code { font-family: var(--font-mono); font-size: .92em; }
     Object.keys(oi).forEach(function (k) { if (/^\d+$/.test(String(oi[k]))) orgaoIds[k] = String(oi[k]); });
   } catch (e) {}
   function cmpPt(a, b) { return a.localeCompare(b, 'pt-BR'); }
+
+  /* Ordem de leitura de um tribunal: câmaras de direito privado, de direito público, cíveis e criminais, seções e órgãos superiores,
+     e por fim o que o navegador aprendeu (varas, juizados). Dentro do grupo, pelo número (1ª, Segunda, Terceira…). */
+  var GRUPOS_ORGAO = ['Câmaras de Direito Privado', 'Câmaras de Direito Público', 'Câmaras Cíveis e Criminais', 'Seções e órgãos superiores', 'Varas, juizados e outros órgãos'];
+  var ORDINAIS = { primeira: 1, primeiro: 1, primeiras: 1, segunda: 2, segundo: 2, segundas: 2, terceira: 3, terceiro: 3, terceiras: 3, quarta: 4, quinta: 5, sexta: 6, setima: 7, oitava: 8, nona: 9, decima: 10 };
+  function grupoOrgao(nome) {
+    if (/c[âa]mara/i.test(nome)) return /direito\s+privado/i.test(nome) ? 0 : /direito\s+p[úu]blico/i.test(nome) ? 1 : 2;
+    if (/^(se[çc][ãa]o|[óo]rg[ãa]o especial|presid[êe]ncia|corregedoria|tribunal pleno|plen[áa]rio)/i.test(nome)) return 3;
+    return 4;
+  }
+  function numeroOrgao(nome) {
+    var m = /^(\d+)\s*[ªºo°]?/.exec(nome);
+    if (m) return parseInt(m[1], 10);
+    return ORDINAIS[C.semAcento(nome).toLowerCase().split(/\s+/)[0]] || 99;
+  }
+  function cmpOrgao(a, b) { return (grupoOrgao(a) - grupoOrgao(b)) || (numeroOrgao(a) - numeroOrgao(b)) || cmpPt(a, b); }
+
+  /* Os últimos órgãos pesquisados ficam no topo da lista, neste navegador. */
+  var CHAVE_RECENTES = 'pub-tjma-recentes-v1';
+  var recentes = [];
+  try { recentes = (JSON.parse(ler(CHAVE_RECENTES) || '[]') || []).filter(function (x) { return typeof x === 'string'; }).slice(0, 4); } catch (e) {}
+  function lembrarOrgao(nome) {
+    if (!nome || recentes[0] === nome) return;
+    recentes = [nome].concat(recentes.filter(function (x) { return x !== nome; })).slice(0, 4);
+    guardar(CHAVE_RECENTES, JSON.stringify(recentes));
+    atualizarListaOrgaosBusca();
+  }
+  var seletorBusca = null, seletorRes = null;
 
   function aprenderLista(lista) {
     var novo = false;
@@ -1805,7 +1891,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var r = resolverOrgao($('orgao-busca').value), n = Object.keys(orgaoIds).length, t;
     if (r.vazio) {
       t = 'Limita a busca a um órgão, direto na API: com palavras comuns, evita baixar milhares de intimações de varas. ' +
-        (n ? (n === 1 ? 'Código já conhecido: 1 órgão (aparece ao clicar no campo).' : 'Códigos já conhecidos: ' + n + ' órgãos (aparecem ao clicar no campo).') : 'Ainda não conheço o código de nenhum órgão: busque uma vez um processo do órgão (' + EXEMPLO_ORGAO + ') e ele passa a aparecer aqui.');
+        'Clique no campo para escolher entre ' + n + ' órgãos conhecidos; varas e juizados entram na lista depois que você busca um processo deles.';
     } else if (r.id) {
       t = r.nome ? 'Vai buscar só em “' + r.nome + '” (código ' + r.id + ').' : 'Vai buscar só no órgão de código ' + r.id + '.';
     } else if (r.ambiguo) {
@@ -1816,9 +1902,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     $('orgao-dica').textContent = t;
   }
   function atualizarListaOrgaosBusca() {
-    var dl = $('lista-orgaos-busca');
-    dl.textContent = '';
-    Object.keys(orgaoIds).sort(cmpPt).forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    if (seletorBusca) seletorBusca.atualizar();
     atualizarDicaOrgao();
   }
 
@@ -1828,7 +1912,166 @@ code { font-family: var(--font-mono); font-size: .92em; }
     if (r.desconhecido) return { f: f, erro: 'Ainda não sei o código do órgão “' + f['orgao-busca'].trim() + '”. Busque uma vez um processo dele (' + EXEMPLO_ORGAO + ') para eu aprender o código, ou digite o código numérico no campo Órgão, ou deixe o campo vazio.' };
     if (r.ambiguo) return { f: f, erro: 'Mais de um órgão combina com “' + f['orgao-busca'].trim() + '”: ' + r.ambiguo.slice(0, 4).join('; ') + '. Escolha um da lista.' };
     f.orgaoId = r.id || '';
+    if (r.nome && r.id) lembrarOrgao(r.nome);
     return { f: f, erro: '' };
+  }
+
+  /* ---------- caixa de escolha (órgão e relator) ---------- */
+  /* Campo de texto que, ao ser clicado, abre um painel com as opções em grupos. Digitar filtra; as setas, o Enter e o Esc funcionam;
+     o painel é uma lista (role listbox) ligada ao campo, para leitor de tela e teclado. Quem usa diz de onde vêm as opções (grupos),
+     o que é uma escolha já feita (selecionado) e o que fazer ao escolher (aoEscolher). */
+  var contaSeletor = 0;
+  function criarSeletor(cfg) {
+    var input = cfg.input, id = 'opcoes-' + (++contaSeletor);
+    var caixa = h('div', 'seletor');
+    input.parentNode.insertBefore(caixa, input);
+    var seta = h('button', 'seletor-seta'); seta.type = 'button'; seta.tabIndex = -1;
+    seta.setAttribute('aria-label', cfg.rotuloSeta || 'Mostrar as opções');
+    var painel = h('div', 'opcoes'); painel.id = id; painel.hidden = true;
+    painel.setAttribute('role', 'listbox'); painel.setAttribute('aria-label', cfg.rotuloLista || 'Opções');
+    caixa.appendChild(input); caixa.appendChild(seta); caixa.appendChild(painel);
+    input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', 'list'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', id);
+    var itens = [], ativa = -1, aberto = false, filtrando = false;
+
+    function norm(x) { return C.semAcento(String(x || '')).toLowerCase().trim(); }
+    function montar() {
+      painel.textContent = ''; itens = []; ativa = -1;
+      input.removeAttribute('aria-activedescendant');
+      var q = filtrando ? norm(input.value) : '', gi = 0;
+      cfg.grupos().forEach(function (g) {
+        var ops = g.itens.filter(function (o) { return !q || norm(o.rotulo).indexOf(q) >= 0; });
+        if (!ops.length) return;
+        var gr = h('div', 'op-grupo'), t = h('div', 'op-titulo', g.titulo);
+        t.id = id + '-g' + (gi++); gr.setAttribute('role', 'group'); gr.setAttribute('aria-labelledby', t.id);
+        gr.appendChild(t);
+        ops.forEach(function (o) {
+          var el = h('div', 'op'); el.id = id + '-o' + itens.length; el.setAttribute('role', 'option');
+          el.appendChild(h('span', 'op-rotulo', o.rotulo));
+          if (o.n !== undefined && o.n !== null && o.n !== '') el.appendChild(h('span', 'op-n', String(o.n)));
+          el.setAttribute('aria-selected', cfg.selecionado(o) ? 'true' : 'false');
+          el._op = o; gr.appendChild(el); itens.push(el);
+        });
+        painel.appendChild(gr);
+      });
+      if (!itens.length) painel.appendChild(h('div', 'op-vazio', cfg.vazio(q)));
+      else if (!filtrando) {
+        for (var i = 0; i < itens.length; i++) if (itens[i].getAttribute('aria-selected') === 'true') { painel.scrollTop = Math.max(0, itens[i].offsetTop - 60); break; }
+      }
+    }
+    function marcar() {
+      itens.forEach(function (el, i) { el.classList.toggle('ativa', i === ativa); });
+      if (ativa >= 0) { input.setAttribute('aria-activedescendant', itens[ativa].id); itens[ativa].scrollIntoView({ block: 'nearest' }); }
+      else input.removeAttribute('aria-activedescendant');
+    }
+    function abrir(comFiltro) {
+      filtrando = !!comFiltro;
+      montar();
+      painel.hidden = false; aberto = true;
+      caixa.setAttribute('data-aberto', ''); input.setAttribute('aria-expanded', 'true');
+    }
+    function fechar() {
+      if (!aberto) return;
+      painel.hidden = true; aberto = false; ativa = -1; filtrando = false;
+      caixa.removeAttribute('data-aberto'); input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant');
+    }
+    function escolher(el) {
+      if (!el || !el._op) return;
+      cfg.aoEscolher(el._op);
+      fechar();
+    }
+    function mover(d) {
+      var n = itens.length;
+      if (!n) return;
+      ativa = ativa < 0 ? (d > 0 ? 0 : n - 1) : (ativa + d + n) % n;
+      marcar();
+    }
+
+    input.addEventListener('click', function () { if (!aberto) abrir(false); });
+    input.addEventListener('input', function () { abrir(true); });
+    input.addEventListener('keydown', function (e) {
+      var k = e.key;
+      if (k === 'ArrowDown' || k === 'ArrowUp') { e.preventDefault(); if (!aberto) abrir(false); mover(k === 'ArrowDown' ? 1 : -1); }
+      else if (k === 'Enter' && aberto && ativa >= 0) { e.preventDefault(); e.stopImmediatePropagation(); escolher(itens[ativa]); }
+      else if (k === 'Enter' && aberto) fechar();
+      else if (k === 'Escape' && aberto) { e.preventDefault(); e.stopPropagation(); fechar(); }
+      else if (k === 'Tab') fechar();
+    });
+    seta.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    seta.addEventListener('click', function () { if (aberto) fechar(); else { input.focus(); abrir(false); } });
+    painel.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    painel.addEventListener('click', function (e) {
+      var el = e.target;
+      while (el && el !== painel && !(el.classList && el.classList.contains('op'))) el = el.parentNode;
+      if (el && el !== painel) { escolher(el); input.focus(); }
+    });
+    caixa.addEventListener('focusout', function (e) { if (aberto && !(e.relatedTarget && caixa.contains(e.relatedTarget))) fechar(); });
+    document.addEventListener('mousedown', function (e) { if (aberto && !caixa.contains(e.target)) fechar(); });
+
+    return {
+      abrir: function () { abrir(false); }, fechar: fechar,
+      atualizar: function () { if (aberto) { var f = filtrando; montar(); filtrando = f; } }
+    };
+  }
+
+  /* Opções do campo Órgão da busca: os órgãos que o arquivo conhece, com o código que vai para a API. */
+  function gruposOrgaoBusca() {
+    var porGrupo = [[], [], [], [], []], g = [];
+    Object.keys(orgaoIds).sort(cmpOrgao).forEach(function (n) { porGrupo[grupoOrgao(n)].push({ rotulo: n, valor: n, n: orgaoIds[n] }); });
+    var rec = recentes.filter(function (n) { return orgaoIds[n]; }).map(function (n) { return { rotulo: n, valor: n, n: orgaoIds[n] }; });
+    if (rec.length) g.push({ titulo: 'Usados por último', itens: rec });
+    porGrupo.forEach(function (lista, i) { if (lista.length) g.push({ titulo: GRUPOS_ORGAO[i], itens: lista }); });
+    return g;
+  }
+  /* Opções do campo Órgão ou relator dos resultados: só o que existe na lista baixada, com a contagem de cada um. */
+  function gruposResultado() {
+    var base = baseAgrupada(), co = {}, g = [], rel = [], sel = $('f-relator'), i, m;
+    base.forEach(function (it) { if (it.orgao) co[it.orgao] = (co[it.orgao] || 0) + 1; });
+    var nomes = Object.keys(co).sort(cmpOrgao);
+    if (nomes.length) g.push({ titulo: 'Órgãos nesta lista', itens: nomes.map(function (n) { return { tipo: 'orgao', rotulo: n, valor: n, n: co[n] }; }) });
+    for (i = 1; i < sel.options.length; i++) {
+      m = /^(.*) \((\d+)\)$/.exec(sel.options[i].textContent);
+      rel.push({ tipo: 'relator', rotulo: m ? m[1] : sel.options[i].textContent, valor: sel.options[i].value, n: m ? parseInt(m[2], 10) : '' });
+    }
+    if (rel.length) g.push({ titulo: 'Relatores nesta lista', itens: rel });
+    return g;
+  }
+  function refiltrar() { estado.mostrar = PASSO; atualizar(); }
+  /* Selo de cada relator escolhido, com o botão de tirar. */
+  function desenharMarcas() {
+    var box = $('f-marcas'), v = $('f-relator').value;
+    box.textContent = '';
+    if (!v) { box.hidden = true; return; }
+    var o = $('f-relator').selectedOptions && $('f-relator').selectedOptions[0];
+    var m = h('span', 'escolha'), b = h('button', '', '×'); b.type = 'button';
+    m.appendChild(h('span', '', 'Relator: ' + (o ? o.textContent : v)));
+    b.setAttribute('aria-label', 'Tirar o filtro de relator');
+    b.addEventListener('click', function () { $('f-relator').value = ''; refiltrar(); $('f-orgao').focus(); });
+    m.appendChild(b); box.appendChild(m); box.hidden = false;
+  }
+  function iniciarSeletores() {
+    var norm = function (x) { return C.semAcento(String(x || '')).toLowerCase().trim(); };
+    seletorBusca = criarSeletor({
+      input: $('orgao-busca'), rotuloSeta: 'Mostrar a lista de órgãos', rotuloLista: 'Órgãos',
+      grupos: gruposOrgaoBusca,
+      selecionado: function (o) { return norm($('orgao-busca').value) === norm(o.rotulo); },
+      vazio: function (q) { return 'Nenhum órgão conhecido combina com “' + q + '”. Se for uma vara ou um juizado, busque uma vez um processo dele (' + EXEMPLO_ORGAO + ') para eu aprender o código, ou digite o código numérico.'; },
+      aoEscolher: function (o) { $('orgao-busca').value = o.valor; atualizarDicaOrgao(); salvarForm(); }
+    });
+    seletorRes = criarSeletor({
+      input: $('f-orgao'), rotuloSeta: 'Mostrar órgãos e relatores desta lista', rotuloLista: 'Órgãos e relatores desta lista',
+      grupos: gruposResultado,
+      selecionado: function (o) { return o.tipo === 'relator' ? $('f-relator').value === o.valor : norm($('f-orgao').value) === norm(o.rotulo); },
+      vazio: function (q) { return estado.itens.length ? 'Nada combina com “' + q + '”. O texto digitado continua filtrando a lista pelo nome do órgão.' : 'Faça uma busca para ver aqui os órgãos e os relatores dos resultados.'; },
+      aoEscolher: function (o) {
+        if (o.tipo === 'relator') {
+          $('f-relator').value = o.valor;
+          var t = norm($('f-orgao').value), ehOrgao = false;
+          baseAgrupada().forEach(function (it) { if (t && norm(it.orgao) === t) ehOrgao = true; });
+          if (!ehOrgao) $('f-orgao').value = '';
+        } else $('f-orgao').value = o.valor;
+        refiltrar();
+      }
+    });
   }
 
   /* ---------- mensagens ---------- */
@@ -2478,25 +2721,12 @@ code { font-family: var(--font-mono); font-size: .92em; }
     sel.value = valores.indexOf(atual) >= 0 ? atual : '';
   }
 
-  /* A API não oferece a lista de órgãos: as sugestões vêm dos que já apareceram em buscas (lembrados neste navegador). */
-  var CHAVE_ORGAOS = 'pub-tjma-orgaos-v1';
-  var orgaosConhecidos = {};
-  try { (JSON.parse(ler(CHAVE_ORGAOS) || '[]') || []).forEach(function (o) { if (typeof o === 'string') orgaosConhecidos[o] = 1; }); } catch (e) {}
-
   function atualizarSelects() {
-    var atos = {}, novoOrgao = false;
-    estado.itens.forEach(function (it) {
-      if (it.orgao && !orgaosConhecidos[it.orgao]) { orgaosConhecidos[it.orgao] = 1; novoOrgao = true; }
-      atos[rotuloAto(it)] = 1;
-    });
-    var cmp = function (a, b) { return a.localeCompare(b, 'pt-BR'); };
-    var nomes = Object.keys(orgaosConhecidos).sort(cmp);
-    if (novoOrgao) guardar(CHAVE_ORGAOS, JSON.stringify(nomes.slice(0, 400)));
-    var dl = $('lista-orgaos');
-    dl.textContent = '';
-    nomes.forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
-    popular($('f-ato'), Object.keys(atos).sort(cmp), 'Todos os atos');
+    var atos = {};
+    estado.itens.forEach(function (it) { atos[rotuloAto(it)] = 1; });
+    popular($('f-ato'), Object.keys(atos).sort(cmpPt), 'Todos os atos');
     popularRelatores();
+    if (seletorRes) seletorRes.atualizar();
   }
 
   function registro(it, termos) {
@@ -2693,6 +2923,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
   function atualizar() {
     var v = visao(), termos = termosDestaque();
+    desenharMarcas();
     var ol = $('regs');
     ol.textContent = '';
     var total = estado.itens.length;
@@ -2855,7 +3086,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       ks.forEach(function (k) { window.localStorage.removeItem(k); });
     } catch (e) {}
     orgaoIds = {}; Object.keys(SEMENTE_ORGAOS).forEach(function (k) { orgaoIds[k] = SEMENTE_ORGAOS[k]; });
-    orgaosConhecidos = {};
+    recentes = [];
     $('guardado-conf').hidden = true; $('apagar-guardado').hidden = false;
     limparTudo();
     atualizarListaOrgaosBusca();
@@ -2868,6 +3099,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
   }
 
   /* ---------- eventos ---------- */
+  iniciarSeletores();
   /* O botão é "button" e o Enter é tratado aqui: uma prévia em quadro isolado (sandbox sem allow-forms) bloqueia o envio de formulário em silêncio. */
   $('form').addEventListener('submit', function (e) { e.preventDefault(); });
   $('buscar').addEventListener('click', buscar);

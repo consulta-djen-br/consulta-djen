@@ -13,6 +13,11 @@
 ## Visual
 
 A identidade vem do azulejo de São Luís: cobalto sobre louça, o número do processo numa placa de rua em cerâmica e o marca-texto rosa só no termo encontrado.
+O motivo é próprio, inspirado na estrutura desses painéis (medalhão octogonal no centro de cada azulejo, estrela de oito pontas na junção dos quatro, rejunte entre eles) e desenhado em SVG: a parede da página inicial, a frisa do cabeçalho, o selo do logotipo e os medalhões numerados. Tudo usa as variáveis de cor, então acompanha os dois temas (`--vidrado` e `--rejunte` são o esmalte e o rejunte).
+
+## Órgão e relator
+
+No campo Órgão da busca, clicar abre a lista dos 26 órgãos de 2º grau do TJMA (câmaras, seções, Órgão Especial, Presidência), com o código que vai para a API; varas e juizados entram na lista depois que aparecem num resultado, e os últimos órgãos pesquisados ficam no topo. Nos resultados, o campo "Órgão ou relator" abre a lista do que existe na lista baixada, com a contagem de cada um; escolher um relator mostra um selo com o botão de tirar. A API não filtra por relator (ele é lido do texto), por isso os relatores só aparecem depois da busca.
 Há dois temas, claro (Louça) e escuro (Noite), escolhidos pela preferência do sistema. Todo o CSS fica dentro de cada página, com as cores como variáveis (`--cobalto`, `--louca`, `--tinta` e as demais) no começo do bloco `<style>`.
 Se as fontes não carregarem (por exemplo, ao abrir `djen/index.html` direto do computador ou rodá-lo pela página da API, o "plano B"), valem as fontes do sistema e tudo continua funcionando.
 
