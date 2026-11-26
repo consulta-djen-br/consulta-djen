@@ -504,7 +504,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var LETRAS = /^(?=.*[A-Za-zÀ-ÿ])[A-Za-zÀ-ÖØ-öø-ÿ'’-]+$/;
     var PARADA = /^(?:PROCESSOS?|SESS[ÃA]O|EMENTA|[ÓO]RG[ÃA]O|REVISOR(?:A)?|AGRAVO|APELA[ÇC][ÃA]O|EMBARGOS?|HABEAS|MANDADO|RECURSO|REMESSA|CONFLITO|PETI[ÇC][ÃA]O|A[ÇC][ÃA]O|REF|REFER[ÊE]NCIA|N|DECIS[ÃA]O|AC[ÓO]RD[ÃA]O|DESPACHO|SENTEN[ÇC]A|VOTO|INTIMA[ÇC][ÃA]O|AGRAVANTES?|APELANTES?|AGRAVAD[OA]S?|APELAD[OA]S?|EMBARGANTES?|EMBARGAD[OA]S?|RECORRENTES?|RECORRID[OA]S?|IMPETRANTES?|IMPETRAD[OA]S?|PACIENTES?|AUTOR(?:A|ES|AS)?|REQUERENTES?|REQUERID[OA]S?|EXEQUENTES?|EXECUTAD[OA]S?|JU[ÍI]ZO|ADVOGAD[OA]S?|DEFENSOR(?:A|ES|AS)?|PARTES?|CLASSE|ASSUNTO|COMARCA|VARA|C[ÂA]MARA|TRIBUNAL|PODER|GABINETE|RELAT[OÓ]R(?:A|IA)?|DATA|NOTIFICA[ÇC][ÃA]O|DESEMBARGADOR(?:A|ES|AS)?|DES|DESA|PROCURADOR(?:A|IA|ES|AS)?|MINIST[ÉE]RIO|PROMOTOR(?:A|IA|ES)?|PRESIDENTE|SECRET[ÁA]RI[OA]|INTERESSAD[OA]S?|LITISCONSORTE|TERCEIR[OA]S?|EM|OAB|SUSCITANTES?|SUSCITAD[OA]S?|EXCIPIENTES?|EXCEPT[OA]S?|RECLAMANTES?|RECLAMAD[OA]S?|DENUNCIAD[OA]S?|QUERELANTES?|QUERELAD[OA]S?|COATOR(?:ES|A)?|AUTORIDADES?|INVESTIGAD[OA]S?|REPRESENTANTES?|REPRESENTAD[OA]S?|ASSISTENTES?|NOTIFICANTES?|NOTIFICAD[OA]S?|R[ÉE]US?|CURADOR(?:A|ES)?|INVENTARIANTE)$/i;
     var PARTICULAS = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, di: 1, del: 1 };
-    var TIT = /^(?:Exm[oa]\.?\s+Sr[a]?\.?\s+)?(Des(?:a|emb(?:argador(?:a)?)?)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+de\s+Direito)?(?:\s+Convocad[oa])?|Min(?:istr[oa]|\.)?)\.?\s+/i;
+    var TIT = /^(?:Exm[oa]\.?\s+Sr[a]?\.?\s+)?(Des(?:a|emb\w*)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+de\s+Direito)?(?:\s+Convocad[oa])?|Min(?:istr[oa]|\.)?)\.?\s+/i;
     function nomeProprio(toks) {
       return toks.map(function (w, i) {
         var l = w.toLowerCase();
@@ -548,9 +548,9 @@ code { font-family: var(--font-mono); font-size: .92em; }
         if (a && !/data\s+de\s+julgamento|publicado\s+no\s+DJ|\bTurma\b|\bDJe?\b/i.test(resto.slice(0, 140))) return a.nome;
       }
       var fim = texto.slice(-600);
-      var ass = /(?:Des(?:a|emb(?:argador(?:a)?)?)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+Convocad[oa])?)\s+((?:[A-Za-zÀ-ÿ'’-]+\s+){1,9}?[A-Za-zÀ-ÿ'’-]+)\s*[-–—]*\s*Relator(?:a)?\b/i.exec(fim);
+      var ass = /(?:Des(?:a|emb\w*)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+Convocad[oa])?)\s+((?:[A-Za-zÀ-ÿ'’-]+\s+){1,9}?[A-Za-zÀ-ÿ'’-]+)\s*[-–—]*\s*Relator(?:a)?\b/i.exec(fim);
       if (ass) { var b = lerNome(ass[0].replace(/\s*[-–—]*\s*Relator(?:a)?\b.*$/i, '')); if (b) return b.nome; }
-      var cab = texto.slice(0, 600), hr = /(?:GABINETE\s+(?:D[OA]\s+)?)?((?:DES(?:A|EMB(?:ARGADOR(?:A)?)?)?\.?(?:\(A\))?)\s+(?=[A-ZÀ-Ú]))/g;
+      var cab = texto.slice(0, 600), hr = /(?:GABINETE\s+(?:D[OA]\s+)?)?((?:DES(?:A|EMB[A-ZÀ-Ú]*)?\.?(?:\(A\))?)\s+(?=[A-ZÀ-Ú]))/g;
       while ((r = hr.exec(cab))) {
         var c = lerNome(cab.slice(r.index + (r[0].length - r[1].length), r.index + r[0].length + 160));
         if (c && /^(?:PROCESSO|SESS[ÃA]O|SESSAO|AGRAVO|APELA|EMBARGOS|HABEAS|MANDADO|RECURSO|REMESSA|CONFLITO|PETI)/.test(c.parou)) return c.nome;
@@ -2418,7 +2418,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var todos = h('option', '', 'Todos os relatores'); todos.value = ''; sel.appendChild(todos);
     chaves.forEach(function (k) {
       var m = mapa[k];
-      var forma = Object.keys(m.formas).sort(function (a, b) { return (b.split(' ').length - a.split(' ').length) || (nAcentos(b) - nAcentos(a)) || (m.formas[b] - m.formas[a]); })[0];
+      var forma = Object.keys(m.formas).sort(function (a, b) { return (m.formas[b] - m.formas[a]) || (b.split(' ').length - a.split(' ').length) || (nAcentos(b) - nAcentos(a)); })[0];
       var o = h('option', '', forma + ' (' + m.n + ')'); o.value = k; sel.appendChild(o);
     });
     if (sem && chaves.length) { var so = h('option', '', 'Sem relator identificado (' + sem + ')'); so.value = '__sem__'; sel.appendChild(so); }
