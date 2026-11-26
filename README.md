@@ -7,6 +7,7 @@
   (`https://comunicaapi.pje.jus.br/api/v1/comunicacao`). É um único arquivo; roda no navegador do usuário.
 - `fonts/`: as três famílias do visual, em arquivos `.woff2`, cada uma com o texto da sua licença (SIL Open Font License 1.1):
   Besley (títulos), Atkinson Hyperlegible Next (texto) e Atkinson Hyperlegible Mono (números de processo, datas).
+- `sitemap.xml`: lista as duas páginas para o Google (enviado pelo Search Console).
 - `.nojekyll`: faz o GitHub Pages servir os arquivos como estão.
 
 ## Visual
@@ -19,6 +20,13 @@ Se as fontes não carregarem (por exemplo, ao abrir `djen/index.html` direto do 
 
 O site é servido pelo GitHub Pages a partir da raiz da ramificação `main`. Cada envio para `main` atualiza o site em cerca de um minuto.
 As preferências de cada pessoa ficam no navegador dela (localStorage), então uma atualização não apaga nada.
+
+## Aparecer no Google
+
+As duas páginas já vêm sem bloqueio de indexação, com descrição, endereço canônico e cartão de compartilhamento.
+Para o Google descobrir o site mais rápido: no Search Console, adicione a propriedade por prefixo de URL
+`https://consulta-djen-br.github.io/consulta-djen/`, confirme a posse (marcação HTML ou arquivo) e envie o `sitemap.xml`.
+A indexação leva de alguns dias a algumas semanas. Não é possível usar `robots.txt` aqui, porque o site fica em um subcaminho de `github.io`.
 
 ## Observações
 

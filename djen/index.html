@@ -3,11 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://comunicaapi.pje.jus.br; img-src data:; font-src 'self'; base-uri 'none'; form-action 'none'"><meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://comunicaapi.pje.jus.br; img-src data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f1f3ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1022" media="(prefers-color-scheme: dark)">
-<title>Buscar publicações | Indagatio</title>
+<meta name="description" content="Busque acórdãos, decisões e intimações no Diário de Justiça Eletrônico Nacional (DJEN), inclusive do TJMA, por tema, processo, parte, advogado ou órgão. Separa a ementa e exporta para planilha. Ferramenta independente e não oficial.">
+<link rel="canonical" href="https://consulta-djen-br.github.io/consulta-djen/djen/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Indagatio">
+<meta property="og:title" content="Buscar publicações do DJEN | Indagatio">
+<meta property="og:description" content="Busque acórdãos, decisões e intimações no Diário de Justiça Eletrônico Nacional (DJEN), inclusive do TJMA, por tema, processo, parte, advogado ou órgão. Separa a ementa e exporta para planilha. Ferramenta independente e não oficial.">
+<meta property="og:url" content="https://consulta-djen-br.github.io/consulta-djen/djen/">
+<title>Buscar publicações do DJEN | Indagatio</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23fbfcf9'/%3E%3Crect width='32' height='16' fill='%231c3fb0'/%3E%3Cpath d='M0 16A16 16 0 0 0 32 16L24 16A8 8 0 0 1 8 16Z' fill='%231c3fb0'/%3E%3C/svg%3E">
 <link rel="preload" href="../fonts/Besley-wght.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../fonts/AtkinsonNext-wght.woff2" as="font" type="font/woff2" crossorigin>
@@ -331,6 +339,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       <div class="acoes" style="margin-top:24px">
         <button type="button" id="buscar" class="primario">Buscar</button>
         <button type="button" id="cancelar" hidden>Cancelar</button>
+        <button type="button" id="limpar-busca">Limpar busca e resultados</button>
         <label class="opcao"><input id="manter" type="checkbox"> Manter os resultados anteriores</label>
         <span id="status" class="status" role="status" aria-live="polite"></span>
       </div>
@@ -406,13 +415,19 @@ code { font-family: var(--font-mono); font-size: .92em; }
       <div class="campo"><label for="f-modo">Mostrar em cada resultado</label>
         <select id="f-modo"><option value="ementa">Ementa (quando houver)</option><option value="trecho">Trecho em volta do termo</option></select></div>
     </div>
+    <div class="filtros">
+      <div class="campo"><label for="f-relator">Relator</label><select id="f-relator"><option value="">Todos os relatores</option></select></div>
+      <div class="campo"><label for="f-nao">Não conter</label><input id="f-nao" type="text" autocomplete="off" spellcheck="false" placeholder="palavras a excluir, separadas por ponto e vírgula"></div>
+      <div class="campo"><label for="f-inteira">Palavras inteiras</label>
+        <select id="f-inteira"><option value="">Aceitar parte de palavra</option><option value="1">Só palavra inteira</option></select></div>
+    </div>
     <div id="bloco-relev" class="filtros" hidden>
       <div class="campo"><label for="f-ordem">Ordenar por</label>
         <select id="f-ordem"><option value="relevancia">Mais relevantes primeiro</option><option value="data">Mais recentes primeiro</option></select></div>
       <div class="campo"><label for="f-min">Palavras do tema no texto</label>
         <select id="f-min"><option value="0">Qualquer quantidade</option></select></div>
     </div>
-    <p class="dica">A ementa é separada do acórdão pelo rótulo “Ementa:”. “Onde o termo aparece” usa os termos da caixa à esquerda (por padrão, os da busca; na busca ampliada, qualquer um deles). Em cada acórdão dá para alternar entre ementa, trecho e texto completo.</p>
+    <p class="dica">A ementa é separada do acórdão pelo rótulo “Ementa:”. “Onde o termo aparece” usa os termos da caixa à esquerda (por padrão, os da busca; na busca ampliada, qualquer um deles). Em cada acórdão dá para alternar entre ementa, trecho e texto completo. O relator é lido do texto da publicação. “Não conter” e “Só palavra inteira” valem para o filtro da lista, para os termos marcados e para “Onde o termo aparece”.</p>
     <div><label class="opcao"><input id="agrupar" type="checkbox" checked> Juntar comunicações do mesmo processo e texto</label></div>
 
     <div class="resumo">
@@ -435,7 +450,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       <div id="diag-corpo" class="tecnico"></div>
     </details>
   </section>
-  <footer class="rodape"><p><strong>Indagatio</strong> é uma ferramenta independente e não oficial. Não pertence ao TJMA, ao CNJ nem a qualquer tribunal, e não substitui a consulta ao Diário oficial nem ao portal Comunica PJe. Confira sempre a publicação original antes de usar o resultado.</p><p>Os dados vêm da API pública de comunicações do CNJ. As buscas, os filtros e os códigos de órgão aprendidos ficam só neste navegador; nada é enviado para este site.</p><p><a href="../">Voltar à página inicial</a></p></footer>
+  <footer class="rodape"><p><strong>Indagatio</strong> é uma ferramenta independente e não oficial. Não pertence ao TJMA, ao CNJ nem a qualquer tribunal, e não substitui a consulta ao Diário oficial nem ao portal Comunica PJe. Confira sempre a publicação original antes de usar o resultado.</p><p>Os dados vêm da API pública de comunicações do CNJ. As buscas, os filtros e os códigos de órgão aprendidos ficam só neste navegador; nada é enviado para este site.</p><p id="guardado"><button type="button" id="apagar-guardado" class="mini">Apagar o que este navegador guardou</button><span id="guardado-conf" hidden>Apaga as buscas salvas, os filtros e os códigos de órgão aprendidos neste navegador. <button type="button" id="guardado-sim" class="mini">Apagar tudo</button> <button type="button" id="guardado-nao" class="mini">Cancelar</button></span></p><p><a href="../">Voltar à página inicial</a></p></footer>
 </div>
 
 <script>
@@ -482,13 +497,84 @@ code { font-family: var(--font-mono); font-size: .92em; }
     return m ? paraTitulo(m[1]) : '';
   }
 
-  function detectarRelator(texto) {
-    var m = /Relator(?:a)?\s*:\s*(.{3,100})/.exec(texto);
-    if (!m) return '';
-    var v = m[1].split(/\s+["“(\[]|\s+(?:DECISÃO|ACÓRDÃO|EMENTA|Ementa|DESPACHO|SENTENÇA|Órgão|Orgão|Revisor(?:a)?|Agravante|Apelante|Agravado|Apelado|Embargante|Embargado|Recorrente|Recorrido|Impetrante|Paciente|Autor|Requerente|Requerido|Exequente|Executado)\b/)[0];
-    v = limpar(v);
-    return v.length >= 4 && v.length <= 80 ? v : '';
+  /* Relator. Formatos vistos no TJMA: "Relator : Desembargador Fulano" (acórdão), "RELATORA: DESA. FULANA" (decisão e ementa),
+     "GABINETE DESA. FULANA SESSÃO VIRTUAL" (ata de julgamento), "DESEMBARGADORA FULANA PROCESSO Nº" (cabeçalho de decisão) e
+     "Desa. Fulana - Relatora -" (assinatura). Citações de outros tribunais ("Relator: X, Terceira Turma, data de julgamento") são ignoradas. */
+  var LER_RELATOR = (function () {
+    var LETRAS = /^(?=.*[A-Za-zÀ-ÿ])[A-Za-zÀ-ÖØ-öø-ÿ'’-]+$/;
+    var PARADA = /^(?:PROCESSOS?|SESS[ÃA]O|EMENTA|[ÓO]RG[ÃA]O|REVISOR(?:A)?|AGRAVO|APELA[ÇC][ÃA]O|EMBARGOS?|HABEAS|MANDADO|RECURSO|REMESSA|CONFLITO|PETI[ÇC][ÃA]O|A[ÇC][ÃA]O|REF|REFER[ÊE]NCIA|N|DECIS[ÃA]O|AC[ÓO]RD[ÃA]O|DESPACHO|SENTEN[ÇC]A|VOTO|INTIMA[ÇC][ÃA]O|AGRAVANTES?|APELANTES?|AGRAVAD[OA]S?|APELAD[OA]S?|EMBARGANTES?|EMBARGAD[OA]S?|RECORRENTES?|RECORRID[OA]S?|IMPETRANTES?|IMPETRAD[OA]S?|PACIENTES?|AUTOR(?:A|ES|AS)?|REQUERENTES?|REQUERID[OA]S?|EXEQUENTES?|EXECUTAD[OA]S?|JU[ÍI]ZO|ADVOGAD[OA]S?|DEFENSOR(?:A|ES|AS)?|PARTES?|CLASSE|ASSUNTO|COMARCA|VARA|C[ÂA]MARA|TRIBUNAL|PODER|GABINETE|RELAT[OÓ]R(?:A|IA)?|DATA|NOTIFICA[ÇC][ÃA]O|DESEMBARGADOR(?:A|ES|AS)?|DES|DESA|PROCURADOR(?:A|IA|ES|AS)?|MINIST[ÉE]RIO|PROMOTOR(?:A|IA|ES)?|PRESIDENTE|SECRET[ÁA]RI[OA]|INTERESSAD[OA]S?|LITISCONSORTE|TERCEIR[OA]S?|EM|OAB|SUSCITANTES?|SUSCITAD[OA]S?|EXCIPIENTES?|EXCEPT[OA]S?|RECLAMANTES?|RECLAMAD[OA]S?|DENUNCIAD[OA]S?|QUERELANTES?|QUERELAD[OA]S?|COATOR(?:ES|A)?|AUTORIDADES?|INVESTIGAD[OA]S?|REPRESENTANTES?|REPRESENTAD[OA]S?|ASSISTENTES?|NOTIFICANTES?|NOTIFICAD[OA]S?|R[ÉE]US?|CURADOR(?:A|ES)?|INVENTARIANTE)$/i;
+    var PARTICULAS = { de: 1, da: 1, do: 1, das: 1, dos: 1, e: 1, di: 1, del: 1 };
+    var TIT = /^(?:Exm[oa]\.?\s+Sr[a]?\.?\s+)?(Des(?:a|emb(?:argador(?:a)?)?)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+de\s+Direito)?(?:\s+Convocad[oa])?|Min(?:istr[oa]|\.)?)\.?\s+/i;
+    function nomeProprio(toks) {
+      return toks.map(function (w, i) {
+        var l = w.toLowerCase();
+        if (i > 0 && PARTICULAS[l]) return l;
+        return l.replace(/(^|[-'’])([a-zà-öø-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); });
+      }).join(' ');
+    }
+    function titulo(t) {
+      var l = (t || '').toLowerCase().replace(/\s+/g, ' ');
+      if (/^min/.test(l)) return /^ministra/.test(l) ? 'Ministra' : 'Ministro';
+      if (/\(a\)/.test(l)) return /^ju/.test(l) ? 'Juiz(a)' : 'Desembargador(a)';
+      if (/^desa\b|embargadora/.test(l)) return 'Desembargadora';
+      if (/^des/.test(l)) return 'Desembargador';
+      if (/^ju[ií]za/.test(l)) return /convocad/.test(l) ? 'Juíza convocada' : 'Juíza';
+      if (/^ju[ií]z/.test(l)) return /convocad/.test(l) ? 'Juiz convocado' : 'Juiz';
+      return '';
+    }
+    function lerNome(s) {
+      s = s.replace(/^[\s:–—-]+/, '');
+      var tit = '', m = TIT.exec(s);
+      if (m) { tit = titulo(m[1]); s = s.slice(m[0].length); }
+      var toks = s.split(/\s+/), nome = [], parou = '';
+      for (var i = 0; i < toks.length && nome.length < 10; i++) {
+        var t = toks[i]; if (!t) continue;
+        var t2 = t.replace(/[,.;:]+$/, '');
+        if (!t2 || !LETRAS.test(t2)) { parou = t; break; }
+        if (PARADA.test(t2)) { parou = t2.toUpperCase(); break; }
+        nome.push(t2);
+        if (t2 !== t) { parou = ','; break; }
+      }
+      if (nome.length < 2) return null;
+      var cheio = nome.join(' ');
+      if (cheio.length < 5 || cheio.length > 80) return null;
+      return { nome: (tit ? tit + ' ' : '') + nomeProprio(nome), parou: parou };
+    }
+    return function (texto) {
+      texto = String(texto || '');
+      var r, re = /relator(?:a)?(?:\(a\))?\s*:/gi;
+      while ((r = re.exec(texto)) && r.index < 4000) {
+        var resto = texto.slice(re.lastIndex, re.lastIndex + 240), a = lerNome(resto);
+        if (a && !/data\s+de\s+julgamento|publicado\s+no\s+DJ|\bTurma\b|\bDJe?\b/i.test(resto.slice(0, 140))) return a.nome;
+      }
+      var fim = texto.slice(-600);
+      var ass = /(?:Des(?:a|emb(?:argador(?:a)?)?)?\.?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+Convocad[oa])?)\s+((?:[A-Za-zÀ-ÿ'’-]+\s+){1,9}?[A-Za-zÀ-ÿ'’-]+)\s*[-–—]*\s*Relator(?:a)?\b/i.exec(fim);
+      if (ass) { var b = lerNome(ass[0].replace(/\s*[-–—]*\s*Relator(?:a)?\b.*$/i, '')); if (b) return b.nome; }
+      var cab = texto.slice(0, 600), hr = /(?:GABINETE\s+(?:D[OA]\s+)?)?((?:DES(?:A|EMB(?:ARGADOR(?:A)?)?)?\.?(?:\(A\))?)\s+(?=[A-ZÀ-Ú]))/g;
+      while ((r = hr.exec(cab))) {
+        var c = lerNome(cab.slice(r.index + (r[0].length - r[1].length), r.index + r[0].length + 160));
+        if (c && /^(?:PROCESSO|SESS[ÃA]O|SESSAO|AGRAVO|APELA|EMBARGOS|HABEAS|MANDADO|RECURSO|REMESSA|CONFLITO|PETI)/.test(c.parou)) return c.nome;
+      }
+      return '';
+    };
+  })();
+  /* Nome em maiúsculas vira nome próprio (Desembargadora LUCIMARY CASTELO → Desembargadora Lucimary Castelo). */
+  function suavizar(s) {
+    return String(s || '').replace(/[A-ZÀ-Ú][A-ZÀ-Ú'’-]*/g, function (w, i) {
+      var l = w.toLowerCase();
+      if (i > 0 && /^(?:de|da|do|das|dos|e|di|del)$/.test(l)) return l;
+      return l.replace(/(^|[-'’])([a-zà-öø-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); });
+    });
   }
+  /* O relator vem do leitor acima (rótulo, cabeçalho, assinatura e ata). Só quando o acórdão tem relator para o acórdão
+     (divergência vencedora) vale a leitura da referência, que separa o relator originário de quem redigiu o acórdão. */
+  function leituraRelator(texto) {
+    var a = LER_RELATOR(texto), b = relatorDoAcordao(texto);
+    if (b.paraAcordao) return { relator: suavizar(b.relator) || a, acordao: suavizar(b.paraAcordao) };
+    return { relator: a, acordao: '' };
+  }
+  function detectarRelator(texto) { return leituraRelator(texto).relator; }
+  function detectarRelatorAcordao(texto) { return leituraRelator(texto).acordao; }
 
   function detectarClasse(texto) {
     var m = /Classe\s*:\s*(.{3,70}?)(?=\s+(?:Parte|Requerente|Requerido|Polo|Órgão|Assunto)\b|$)/.exec(texto.slice(0, 1500));
@@ -896,6 +982,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       item.texto = limpar(resto.join(' '));
       item.ato = detectarAto(item.texto);
       item.relator = detectarRelator(item.texto);
+      item.relatorAcordao = detectarRelatorAcordao(item.texto);
       item.classe = detectarClasse(item.texto);
       item.assinatura = item.processo + '|' + assinatura(item.texto);
       item.chave = item.assinatura + '|' + item.partes.join(';');
@@ -927,7 +1014,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
   var api = {
     parse: parse, agrupar: agrupar, trecho: trecho, semAcento: semAcento,
-    assinatura: assinatura, detectarAto: detectarAto, detectarRelator: detectarRelator, detectarClasse: detectarClasse,
+    assinatura: assinatura, detectarAto: detectarAto, detectarRelator: detectarRelator, detectarRelatorAcordao: detectarRelatorAcordao, detectarClasse: detectarClasse,
     extrairEmenta: extrairEmenta, ementaParaCopiar: ementaParaCopiar,
     ementaComReferencia: ementaComReferencia, referenciaJurisprudencial: referenciaJurisprudencial,
     dataJulgamento: dataJulgamento, relatorDoAcordao: relatorDoAcordao, dataPublicacao: dataPublicacao
@@ -1165,6 +1252,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
       texto: texto,
       ato: ato,
       relator: C.detectarRelator(texto),
+      relatorAcordao: C.detectarRelatorAcordao(texto),
       classe: arrumarCaixa(raw.nomeClasse) || C.detectarClasse(texto),
       // Ementa separada do texto (null quando não há "Ementa:" perto do começo).
       ementa: ementaDe(texto, tdoc),
@@ -2244,7 +2332,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
 
   function textoBusca(it) {
     if (!it._b) {
-      it._b = C.semAcento([it.processo, it.orgao, it.partes.join(' '), it.advogados.join(' '), it.ato, it.tipoDocumento, it.classe, it.relator, it.texto].join(' ')).toLowerCase();
+      it._b = C.semAcento([it.processo, it.orgao, it.partes.join(' '), it.advogados.join(' '), it.ato, it.tipoDocumento, it.classe, it.relator, it.relatorAcordao, it.texto].join(' ')).toLowerCase();
     }
     return it._b;
   }
@@ -2270,10 +2358,73 @@ code { font-family: var(--font-mono); font-size: .92em; }
     return t.map(function (x) { return C.semAcento(x).toLowerCase(); });
   }
   function ondeTermo(it, alvo) {
+    var inteira = $('f-inteira').value === '1';
     return {
-      ementa: !!it.ementa && alvo.some(function (a) { return baseEmenta(it).indexOf(a) >= 0; }),
-      resto: alvo.some(function (a) { return baseResto(it).indexOf(a) >= 0; })
+      ementa: !!it.ementa && alvo.some(function (a) { return achaTermo(baseEmenta(it), a, inteira); }),
+      resto: alvo.some(function (a) { return achaTermo(baseResto(it), a, inteira); })
     };
+  }
+
+  /* ---------- filtros de precisão ---------- */
+  var RE_TITULO_REL = /^(?:Desembargador(?:a)?(?:\(a\))?|Ju[ií]z(?:a)?(?:\s+convocad[oa])?(?:\(a\))?|Ministr[oa])\s+/i;
+  var mapaRel = {};
+  function chaveBruta(it) {
+    if (it._rk === undefined) it._rk = it.relator ? C.semAcento(it.relator.replace(RE_TITULO_REL, '')).toLowerCase().replace(/\s+/g, ' ').trim() : '';
+    return it._rk;
+  }
+  function chaveRelator(it) { var k = chaveBruta(it); return mapaRel[k] || k; }
+  /* O mesmo relator aparece com nomes de tamanhos diferentes ("Paulo Velten" e "Paulo Sérgio Velten Pereira"). Une quando o nome curto
+     está contido no longo, na mesma ordem e começando pelo mesmo primeiro nome, e só se houver um único nome longo possível. */
+  function nomesDe(k) { return k.split(' ').filter(function (t) { return t && !/^(?:de|da|do|das|dos|e|di|del)$/.test(t); }); }
+  function contido(curto, longo) {
+    if (curto.length < 2 || curto[0] !== longo[0] || curto.length >= longo.length) return false;
+    var j = 0;
+    for (var i = 0; i < longo.length && j < curto.length; i++) if (longo[i] === curto[j]) j++;
+    return j === curto.length;
+  }
+  function unirNomes(chaves) {
+    var mapa = {}, lista = chaves.slice().sort(function (a, b) { return nomesDe(b).length - nomesDe(a).length; });
+    lista.forEach(function (k, i) {
+      var cand = [];
+      for (var j = 0; j < i; j++) if (contido(nomesDe(k), nomesDe(lista[j]))) cand.push(lista[j]);
+      if (cand.length === 1) mapa[k] = mapa[cand[0]] || cand[0];
+    });
+    return mapa;
+  }
+  function escRe(x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  var cacheRe = {};
+  /* base e termo já sem acento e em minúsculas; "inteira" exige que o termo não esteja colado em outras letras ou números */
+  function achaTermo(base, termo, inteira) {
+    if (!inteira) return base.indexOf(termo) >= 0;
+    var re = cacheRe[termo] || (cacheRe[termo] = new RegExp('(^|[^a-z0-9])' + escRe(termo) + '(?![a-z0-9])'));
+    return re.test(base);
+  }
+  function termosNao() {
+    return C.semAcento($('f-nao').value).toLowerCase().split(/[;\n]+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 2; });
+  }
+  function nAcentos(x) { var n = 0; for (var i = 0; i < x.length; i++) if (x.charCodeAt(i) > 127) n++; return n; }
+  function popularRelatores() {
+    var sel = $('f-relator'), atual = sel.value, mapa = {}, sem = 0, base = baseAgrupada(), brutas = {};
+    base.forEach(function (it) { var b = chaveBruta(it); if (b) brutas[b] = 1; });
+    mapaRel = unirNomes(Object.keys(brutas));
+    base.forEach(function (it) {
+      var k = chaveRelator(it);
+      if (!k) { sem++; return; }
+      var m = mapa[k] || (mapa[k] = { n: 0, formas: {} });
+      m.n++; m.formas[it.relator] = (m.formas[it.relator] || 0) + 1;
+    });
+    var chaves = Object.keys(mapa).sort(function (a, b) { return (mapa[b].n - mapa[a].n) || a.localeCompare(b, 'pt-BR'); });
+    sel.textContent = '';
+    var todos = h('option', '', 'Todos os relatores'); todos.value = ''; sel.appendChild(todos);
+    chaves.forEach(function (k) {
+      var m = mapa[k];
+      var forma = Object.keys(m.formas).sort(function (a, b) { return (b.split(' ').length - a.split(' ').length) || (nAcentos(b) - nAcentos(a)) || (m.formas[b] - m.formas[a]); })[0];
+      var o = h('option', '', forma + ' (' + m.n + ')'); o.value = k; sel.appendChild(o);
+    });
+    if (sem && chaves.length) { var so = h('option', '', 'Sem relator identificado (' + sem + ')'); so.value = '__sem__'; sel.appendChild(so); }
+    var existe = false;
+    for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === atual) existe = true;
+    sel.value = existe ? atual : '';
   }
 
   function baseAgrupada() {
@@ -2293,11 +2444,13 @@ code { font-family: var(--font-mono); font-size: .92em; }
     var base = baseAgrupada();
     var palavras = C.semAcento($('filtro').value).toLowerCase().split(/\s+/).filter(Boolean);
     var fo = C.semAcento($('f-orgao').value).toLowerCase().trim(), fa = $('f-ato').value;
+    var fr = $('f-relator').value, inteira = $('f-inteira').value === '1', nao = termosNao();
     var onde = $('f-onde').value, alvo = onde === 'tudo' ? [] : termosAlvo();
     var minimo = estado.relev ? (parseInt($('f-min').value, 10) || 0) : 0;
     var lista = base.filter(function (it) {
       if (fo && C.semAcento(it.orgao).toLowerCase().indexOf(fo) < 0) return false;
       if (fa && rotuloAto(it) !== fa) return false;
+      if (fr && (fr === '__sem__' ? chaveRelator(it) !== '' : chaveRelator(it) !== fr)) return false;
       if (minimo && relevanciaDe(it).achadas < minimo) return false;
       if (alvo.length) {
         var o = ondeTermo(it, alvo);
@@ -2305,7 +2458,8 @@ code { font-family: var(--font-mono); font-size: .92em; }
         if (onde === 'fora' && (o.ementa || !o.resto)) return false;
       }
       var b = textoBusca(it);
-      for (var i = 0; i < palavras.length; i++) if (b.indexOf(palavras[i]) < 0) return false;
+      for (var i = 0; i < palavras.length; i++) if (!achaTermo(b, palavras[i], inteira)) return false;
+      for (var j = 0; j < nao.length; j++) if (achaTermo(b, nao[j], inteira)) return false;
       return true;
     });
     if (estado.relev && $('f-ordem').value === 'relevancia') {
@@ -2342,6 +2496,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     dl.textContent = '';
     nomes.forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
     popular($('f-ato'), Object.keys(atos).sort(cmp), 'Todos os atos');
+    popularRelatores();
   }
 
   function registro(it, termos) {
@@ -2377,6 +2532,7 @@ code { font-family: var(--font-mono); font-size: .92em; }
     if (tdoc && tdoc !== (it.ato || '').toLowerCase() && tdoc !== (it.tipo || '').toLowerCase()) chips.appendChild(h('span', 'chip vazado', it.tipoDocumento));
     if (it.classe) chips.appendChild(h('span', 'chip vazado', it.classe));
     if (it.relator) chips.appendChild(h('span', '', 'Relator: ' + it.relator));
+    if (it.relatorAcordao) chips.appendChild(h('span', '', 'Relator para o acórdão: ' + it.relatorAcordao));
     if (it.tipo) chips.appendChild(h('span', '', it.tipo));
     if (it.comunicacoes > 1) chips.appendChild(h('span', 'chip vazado', it.comunicacoes + ' destinatários'));
     if (estado.nConsultas > 1 && it.achadoPor.length) {
@@ -2506,12 +2662,16 @@ code { font-family: var(--font-mono); font-size: .92em; }
     if ($('filtro').value.trim()) a.push('Filtrar na lista “' + $('filtro').value.trim() + '”');
     if ($('f-orgao').value.trim()) a.push('Órgão “' + $('f-orgao').value.trim() + '”');
     if ($('f-ato').value) a.push('Ato “' + $('f-ato').value + '”');
+    if ($('f-relator').value) a.push('Relator “' + sel('f-relator') + '”');
+    if ($('f-nao').value.trim()) a.push('Não conter “' + $('f-nao').value.trim() + '”');
+    if ($('f-inteira').value === '1') a.push('Só palavra inteira');
     if ($('f-onde').value !== 'tudo') a.push('Onde o termo aparece: ' + sel('f-onde'));
     if (estado.relev && $('f-min').value !== '0') a.push('Palavras do tema: ' + sel('f-min'));
     return a;
   }
   function limparFiltros() {
     $('filtro').value = ''; $('f-orgao').value = ''; $('f-ato').value = ''; $('f-onde').value = 'tudo'; $('f-min').value = '0';
+    $('f-relator').value = ''; $('f-nao').value = ''; $('f-inteira').value = '';
     estado.mostrar = PASSO;
     atualizar();
   }
@@ -2593,13 +2753,13 @@ code { font-family: var(--font-mono); font-size: .92em; }
   }
 
   /* ---------- planilha ---------- */
-  var CABECALHO = ['Processo', 'Órgão', 'Data de disponibilização', 'Tipo de comunicação', 'Tipo de documento', 'Ato (detectado)', 'Classe', 'Relator (detectado)', 'Partes', 'Advogados', 'Inteiro teor (link)', 'Ementa', 'Termo na ementa', 'Trecho'];
+  var CABECALHO = ['Processo', 'Órgão', 'Data de disponibilização', 'Tipo de comunicação', 'Tipo de documento', 'Ato (detectado)', 'Classe', 'Relator', 'Relator para o acórdão', 'Partes', 'Advogados', 'Inteiro teor (link)', 'Ementa', 'Termo na ementa', 'Trecho'];
   function linhasPlanilha(lista, termos) {
     var rel = estado.relev, alvo = termosAlvo();
     var linhas = [rel ? CABECALHO.concat(['Palavras do tema encontradas', 'Pontos de relevância']) : CABECALHO];
     lista.forEach(function (it) {
       var naEmenta = it.ementa && alvo.length ? (ondeTermo(it, alvo).ementa ? 'sim' : 'não') : '';
-      var linha = [it.processo, it.orgao, it.data, it.tipo, it.tipoDocumento, it.ato, it.classe, it.relator,
+      var linha = [it.processo, it.orgao, it.data, it.tipo, it.tipoDocumento, it.ato, it.classe, it.relator, it.relatorAcordao || '',
         it.partes.join('; '), it.advogados.join('; '), it.link, it.ementa ? it.ementa.texto : '', naEmenta,
         C.trecho(it.texto, termos, 140).texto];
       if (rel) { var rv = relevanciaDe(it); linha.push(rv.achadas + ' de ' + rv.total, String(rv.pontos).replace('.', ',')); }
@@ -2663,6 +2823,45 @@ code { font-family: var(--font-mono); font-size: .92em; }
     if (!d.childNodes.length) d.appendChild(h('div', '', 'Ainda não há busca.'));
   }
 
+  /* ---------- limpar ---------- */
+  function limparTudo() {
+    if (estado.buscando) { dizer('Há uma busca em andamento. Cancele antes de limpar.'); return false; }
+    if (estado.resolverConfirma) responderConfirmacao(false);
+    CAMPOS.forEach(function (k) { $(k).value = ''; });
+    $('sigla').value = 'TJMA'; $('uf').value = 'MA'; $('meio').value = '';
+    $('ampliar').checked = false;
+    $('periodo').value = '7'; aplicarPeriodo('7'); periodoMexido = false;
+    $('mais-filtros').open = false;
+    fecharVariacoes();
+    ['confirma', 'erro-busca', 'andamento', 'log', 'manual'].forEach(function (id) { $(id).hidden = true; });
+    zerar();
+    ['filtro', 'f-orgao', 'destaque', 'f-nao'].forEach(function (id) { $(id).value = ''; });
+    ['f-onde'].forEach(function (id) { $(id).value = 'tudo'; });
+    ['f-ato', 'f-relator', 'f-inteira'].forEach(function (id) { $(id).value = ''; });
+    estado.termosBusca = []; estado.nConsultas = 0; estado.urls = []; estado.limite = null; estado.ultimoResumo = null;
+    try { window.localStorage.removeItem(CHAVE_FORM); window.localStorage.removeItem(CHAVE_MODO); } catch (e) {}
+    prepararBlocoRelev();
+    atualizarDicaOrgao();
+    atualizarSelects(); atualizar(); atualizarDiag();
+    $('termos').focus();
+    dizer('Busca e resultados limpos.');
+    return true;
+  }
+  function apagarGuardado() {
+    if (estado.buscando) { dizer('Há uma busca em andamento. Cancele antes de apagar.'); return; }
+    try {
+      var ks = [];
+      for (var i = 0; i < window.localStorage.length; i++) { var k = window.localStorage.key(i); if (k && k.indexOf('pub-tjma-') === 0) ks.push(k); }
+      ks.forEach(function (k) { window.localStorage.removeItem(k); });
+    } catch (e) {}
+    orgaoIds = {}; Object.keys(SEMENTE_ORGAOS).forEach(function (k) { orgaoIds[k] = SEMENTE_ORGAOS[k]; });
+    orgaosConhecidos = {};
+    $('guardado-conf').hidden = true; $('apagar-guardado').hidden = false;
+    limparTudo();
+    atualizarListaOrgaosBusca();
+    dizer('Tudo o que este navegador guardava foi apagado.');
+  }
+
   /* ---------- plano B ---------- */
   function scriptPlanoB() {
     return '(function(){var h=' + JSON.stringify(FONTE) + ';document.open();document.write(h);document.close();})();';
@@ -2679,6 +2878,10 @@ code { font-family: var(--font-mono); font-size: .92em; }
     $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); buscar(); } });
   });
   $('cancelar').addEventListener('click', cancelarBusca);
+  $('limpar-busca').addEventListener('click', limparTudo);
+  $('apagar-guardado').addEventListener('click', function () { $('guardado-conf').hidden = false; $('apagar-guardado').hidden = true; });
+  $('guardado-nao').addEventListener('click', function () { $('guardado-conf').hidden = true; $('apagar-guardado').hidden = false; });
+  $('guardado-sim').addEventListener('click', apagarGuardado);
   $('ampliar').addEventListener('change', salvarForm);
   $('orgao-busca').addEventListener('input', atualizarDicaOrgao);
   $('orgao-busca').addEventListener('change', salvarForm);
@@ -2706,8 +2909,9 @@ code { font-family: var(--font-mono); font-size: .92em; }
     dizer('Lista limpa.');
   });
   $('mais').addEventListener('click', function () { estado.mostrar += PASSO; atualizar(); });
-  ['filtro', 'destaque', 'f-orgao'].forEach(function (id) { $(id).addEventListener('input', function () { estado.mostrar = PASSO; atualizar(); }); });
-  ['f-ato', 'agrupar', 'f-onde', 'f-ordem', 'f-min'].forEach(function (id) { $(id).addEventListener('change', function () { estado.mostrar = PASSO; atualizar(); }); });
+  ['filtro', 'destaque', 'f-orgao', 'f-nao'].forEach(function (id) { $(id).addEventListener('input', function () { estado.mostrar = PASSO; atualizar(); }); });
+  $('agrupar').addEventListener('change', popularRelatores);
+  ['f-ato', 'agrupar', 'f-onde', 'f-ordem', 'f-min', 'f-relator', 'f-inteira'].forEach(function (id) { $(id).addEventListener('change', function () { estado.mostrar = PASSO; atualizar(); }); });
   $('f-modo').addEventListener('change', function () { guardar(CHAVE_MODO, $('f-modo').value); atualizar(); });
   $('copiar-tabela').addEventListener('click', copiarTabela);
   $('baixar-csv').addEventListener('click', baixarCsv);
